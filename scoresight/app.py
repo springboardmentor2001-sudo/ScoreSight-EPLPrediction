@@ -47,4 +47,4 @@ def display_fixtures(matches, limit=10):
 if __name__ == "__main__":
     fixtures = fetch_premier_league_fixtures()
     if fixtures:
-        display_fixtures(fixtures)
+        display_fixtures(fixtures)  

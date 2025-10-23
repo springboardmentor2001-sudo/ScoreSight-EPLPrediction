@@ -21,13 +21,21 @@ import {
   Chat
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { mockPredictions } from '../services/mockData';
 import liveDataService from '../services/liveDataService';
+import { footballAPI } from '../services/footballApi';
+
+// Add these interfaces for our data
+interface Team {
+  id: number;
+  name: string;
+  shortName: string;
+  crest: string;
+}
 
 interface LiveMatch {
   id: number;
-  homeTeam: any;
-  awayTeam: any;
+  homeTeam: Team;
+  awayTeam: Team;
   date: string;
   status: string;
   score: any;
@@ -35,9 +43,22 @@ interface LiveMatch {
   matchday: number;
 }
 
+interface Prediction {
+  homeTeam: Team;
+  awayTeam: Team;
+  homeWinProbability: number;
+  drawProbability: number;
+  awayWinProbability: number;
+  confidence: 'high' | 'medium' | 'low';
+  predictedScore: string;
+  keyFactors: string[];
+  betRecommendation?: string;
+}
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
 
@@ -50,15 +71,35 @@ const Dashboard: React.FC = () => {
     const fetchLiveData = async () => {
       try {
         const fixtures = await liveDataService.getFixtures();
-        console.log('Fixtures from API:', fixtures); // Debug log
+        console.log('Fixtures from API:', fixtures);
         
         // Show first 4 matches regardless of date for testing
         const upcomingMatches = fixtures.slice(0, 4);
         setLiveMatches(upcomingMatches);
+
+        // Generate mock predictions based on real fixtures
+        const mockPredictions = upcomingMatches.map((match: LiveMatch, index: number) => ({
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeWinProbability: 0.4 + (index * 0.1), // Varying probabilities
+          drawProbability: 0.25,
+          awayWinProbability: 0.35 - (index * 0.1),
+          confidence: index === 0 ? 'high' : index === 1 ? 'medium' : 'low' as const,
+          predictedScore: index === 0 ? '2-1' : index === 1 ? '1-1' : '0-2',
+          keyFactors: [
+            'Home advantage significant',
+            'Recent form analysis',
+            'Head-to-head record favorable'
+          ],
+          betRecommendation: index === 0 ? 'HOME WIN' : undefined
+        }));
+
+        setPredictions(mockPredictions);
       } catch (error) {
         console.error('Error fetching live data:', error);
-        // Fallback to mock data
-        setLiveMatches(mockPredictions as any);
+        // Create fallback empty state instead of using mock data
+        setLiveMatches([]);
+        setPredictions([]);
       } finally {
         setLoading(false);
       }
@@ -89,6 +130,7 @@ const Dashboard: React.FC = () => {
       gap: 3, 
       mb: 4 
     }}>
+      {/* Stats cards remain the same */}
       <Card sx={{ 
         height: '100%', 
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -175,18 +217,25 @@ const Dashboard: React.FC = () => {
     </Box>
   );
 
-  const MatchCard: React.FC<{ match: any }> = ({ match }) => {
-    // For now, we'll use mock predictions with real team data
-    const mockPrediction = mockPredictions.find(mp => 
-      mp.homeTeam.shortName === match.homeTeam.shortName && 
-      mp.awayTeam.shortName === match.awayTeam.shortName
-    ) || mockPredictions[0];
+  const MatchCard: React.FC<{ match: LiveMatch; prediction?: Prediction }> = ({ match, prediction }) => {
+    // Use the provided prediction or create a basic fallback
+    const currentPrediction = prediction || {
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeWinProbability: 0.5,
+      drawProbability: 0.25,
+      awayWinProbability: 0.25,
+      confidence: 'medium' as const,
+      predictedScore: '1-1',
+      keyFactors: ['Data analysis in progress'],
+      betRecommendation: undefined
+    };
 
     return (
       <Card sx={{ 
         height: '100%',
         transition: 'all 0.3s ease-in-out',
-        border: `2px solid ${mockPrediction.confidence === 'high' ? '#4caf50' : mockPrediction.confidence === 'medium' ? '#ff9800' : '#f44336'}`,
+        border: `2px solid ${currentPrediction.confidence === 'high' ? '#4caf50' : currentPrediction.confidence === 'medium' ? '#ff9800' : '#f44336'}`,
         '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
@@ -209,9 +258,9 @@ const Dashboard: React.FC = () => {
               </Typography>
             </Box>
             <Chip 
-              label={`${mockPrediction.confidence.toUpperCase()} CONFIDENCE`} 
+              label={`${currentPrediction.confidence.toUpperCase()} CONFIDENCE`} 
               size="small"
-              color={getConfidenceColor(mockPrediction.confidence) as any}
+              color={getConfidenceColor(currentPrediction.confidence) as any}
             />
           </Box>
 
@@ -224,40 +273,40 @@ const Dashboard: React.FC = () => {
                 </Avatar>
                 <Typography variant="body2" fontWeight="600">{match.homeTeam.shortName}</Typography>
               </Box>
-              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(mockPrediction.homeWinProbability)}>
-                {(mockPrediction.homeWinProbability * 100).toFixed(1)}%
+              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.homeWinProbability)}>
+                {(currentPrediction.homeWinProbability * 100).toFixed(1)}%
               </Typography>
             </Box>
             <LinearProgress 
               variant="determinate" 
-              value={mockPrediction.homeWinProbability * 100} 
+              value={currentPrediction.homeWinProbability * 100} 
               sx={{ 
                 height: 8, 
                 borderRadius: 4,
                 mb: 2,
                 backgroundColor: '#e0e0e0',
                 '& .MuiLinearProgress-bar': {
-                  backgroundColor: getWinProbabilityColor(mockPrediction.homeWinProbability)
+                  backgroundColor: getWinProbabilityColor(currentPrediction.homeWinProbability)
                 }
               }} 
             />
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" fontWeight="600">Draw</Typography>
-              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(mockPrediction.drawProbability)}>
-                {(mockPrediction.drawProbability * 100).toFixed(1)}%
+              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.drawProbability)}>
+                {(currentPrediction.drawProbability * 100).toFixed(1)}%
               </Typography>
             </Box>
             <LinearProgress 
               variant="determinate" 
-              value={mockPrediction.drawProbability * 100} 
+              value={currentPrediction.drawProbability * 100} 
               sx={{ 
                 height: 8, 
                 borderRadius: 4,
                 mb: 2,
                 backgroundColor: '#e0e0e0',
                 '& .MuiLinearProgress-bar': {
-                  backgroundColor: getWinProbabilityColor(mockPrediction.drawProbability)
+                  backgroundColor: getWinProbabilityColor(currentPrediction.drawProbability)
                 }
               }} 
             />
@@ -269,19 +318,19 @@ const Dashboard: React.FC = () => {
                 </Avatar>
                 <Typography variant="body2" fontWeight="600">{match.awayTeam.shortName}</Typography>
               </Box>
-              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(mockPrediction.awayWinProbability)}>
-                {(mockPrediction.awayWinProbability * 100).toFixed(1)}%
+              <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.awayWinProbability)}>
+                {(currentPrediction.awayWinProbability * 100).toFixed(1)}%
               </Typography>
             </Box>
             <LinearProgress 
               variant="determinate" 
-              value={mockPrediction.awayWinProbability * 100} 
+              value={currentPrediction.awayWinProbability * 100} 
               sx={{ 
                 height: 8, 
                 borderRadius: 4,
                 backgroundColor: '#e0e0e0',
                 '& .MuiLinearProgress-bar': {
-                  backgroundColor: getWinProbabilityColor(mockPrediction.awayWinProbability)
+                  backgroundColor: getWinProbabilityColor(currentPrediction.awayWinProbability)
                 }
               }} 
             />
@@ -299,7 +348,7 @@ const Dashboard: React.FC = () => {
               AI KEY INSIGHTS
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              {mockPrediction.keyFactors.map((factor: string, index: number) => (
+              {currentPrediction.keyFactors.map((factor: string, index: number) => (
                 <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5 }}>
                   {factor}
                 </Typography>
@@ -307,11 +356,11 @@ const Dashboard: React.FC = () => {
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                Predicted Score: <strong>{mockPrediction.predictedScore}</strong>
+                Predicted Score: <strong>{currentPrediction.predictedScore}</strong>
               </Typography>
-              {mockPrediction.betRecommendation && (
+              {currentPrediction.betRecommendation && (
                 <Chip 
-                  label={mockPrediction.betRecommendation} 
+                  label={currentPrediction.betRecommendation} 
                   size="small" 
                   color="success"
                   variant="outlined"
@@ -403,8 +452,12 @@ const Dashboard: React.FC = () => {
             gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
             gap: 3 
           }}>
-            {liveMatches.map((match) => (
-              <MatchCard key={match.id} match={match} />
+            {liveMatches.map((match, index) => (
+              <MatchCard 
+                key={match.id} 
+                match={match} 
+                prediction={predictions[index]} 
+              />
             ))}
           </Box>
         )}

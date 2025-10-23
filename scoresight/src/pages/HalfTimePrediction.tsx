@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -23,11 +23,20 @@ import {
   Schedule,
   Psychology
 } from '@mui/icons-material';
-import { mockTeams } from '../services/mockData';
+import { footballAPI } from '../services/footballApi';
+
+// Add interface for Team
+interface Team {
+  id: number;
+  name: string;
+  shortName: string;
+  crest: string;
+}
 
 const HalfTimePrediction: React.FC = () => {
   const [homeTeam, setHomeTeam] = useState('');
   const [awayTeam, setAwayTeam] = useState('');
+  const [teams, setTeams] = useState<Team[]>([]);
   const [halfTimeScore, setHalfTimeScore] = useState({ home: 0, away: 0 });
   const [matchStats, setMatchStats] = useState({
     shots: { home: 0, away: 0 },
@@ -40,13 +49,40 @@ const HalfTimePrediction: React.FC = () => {
   });
   const [prediction, setPrediction] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [teamsLoading, setTeamsLoading] = useState(true);
   const [activeStep, setActiveStep] = useState(0);
 
-  const handlePredict = () => {
+  // Fetch teams from API
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const teamsData = await footballAPI.getTeams();
+        setTeams(teamsData.teams || []);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        setTeams([]);
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  const handlePredict = async () => {
     if (!homeTeam || !awayTeam) return;
     
     setLoading(true);
-    setTimeout(() => {
+    try {
+      // Call your backend for real half-time predictions
+      const response = await fetch(`http://localhost:8000/api/half-time-predict?home_team=${homeTeam}&away_team=${awayTeam}&home_score=${halfTimeScore.home}&away_score=${halfTimeScore.away}`);
+      const predictionData = await response.json();
+      
+      setPrediction(predictionData);
+      setActiveStep(2);
+    } catch (error) {
+      console.error('Prediction error:', error);
+      // Fallback to basic calculation if API fails
       const homeWinProb = 0.45 + (halfTimeScore.home - halfTimeScore.away) * 0.1;
       const drawProb = 0.25;
       const awayWinProb = 0.30 - (halfTimeScore.home - halfTimeScore.away) * 0.1;
@@ -70,9 +106,9 @@ const HalfTimePrediction: React.FC = () => {
           halfTimeScore.home < halfTimeScore.away ? 'the away team' : 'both teams'
         } have the momentum.`
       });
+    } finally {
       setLoading(false);
-      setActiveStep(2);
-    }, 2000);
+    }
   };
 
   const getConfidenceColor = (confidence: string) => {
@@ -98,6 +134,9 @@ const HalfTimePrediction: React.FC = () => {
   );
 
   const steps = ['Match Setup', 'First-Half Stats', 'Prediction Results'];
+
+  // Helper function to find team by ID
+  const findTeamById = (id: string) => teams.find(team => team.id === parseInt(id));
 
   return (
     <Box>
@@ -144,17 +183,22 @@ const HalfTimePrediction: React.FC = () => {
                   label="Home Team"
                   value={homeTeam}
                   onChange={(e) => setHomeTeam(e.target.value)}
+                  disabled={teamsLoading}
                 >
-                  {mockTeams.map((team) => (
-                    <MenuItem key={team.id} value={team.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: 'primary.main' }}>
-                          {team.crest}
-                        </Avatar>
-                        {team.shortName}
-                      </Box>
-                    </MenuItem>
-                  ))}
+                  {teamsLoading ? (
+                    <MenuItem disabled>Loading teams...</MenuItem>
+                  ) : (
+                    teams.map((team) => (
+                      <MenuItem key={team.id} value={team.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: 'primary.main' }}>
+                            {team.crest}
+                          </Avatar>
+                          {team.shortName}
+                        </Box>
+                      </MenuItem>
+                    ))
+                  )}
                 </TextField>
                 
                 <Typography variant="h6" sx={{ textAlign: 'center' }}>VS</Typography>
@@ -165,17 +209,22 @@ const HalfTimePrediction: React.FC = () => {
                   label="Away Team"
                   value={awayTeam}
                   onChange={(e) => setAwayTeam(e.target.value)}
+                  disabled={teamsLoading}
                 >
-                  {mockTeams.map((team) => (
-                    <MenuItem key={team.id} value={team.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: 'secondary.main' }}>
-                          {team.crest}
-                        </Avatar>
-                        {team.shortName}
-                      </Box>
-                    </MenuItem>
-                  ))}
+                  {teamsLoading ? (
+                    <MenuItem disabled>Loading teams...</MenuItem>
+                  ) : (
+                    teams.map((team) => (
+                      <MenuItem key={team.id} value={team.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: 'secondary.main' }}>
+                            {team.crest}
+                          </Avatar>
+                          {team.shortName}
+                        </Box>
+                      </MenuItem>
+                    ))
+                  )}
                 </TextField>
               </Box>
 
@@ -247,9 +296,9 @@ const HalfTimePrediction: React.FC = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, mb: 2 }}>
                     <Box sx={{ textAlign: 'center' }}>
                       <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.main', mb: 1 }}>
-                        {mockTeams.find(t => t.id === parseInt(homeTeam))?.crest}
+                        {findTeamById(homeTeam)?.crest}
                       </Avatar>
-                      <Typography variant="h6">{mockTeams.find(t => t.id === parseInt(homeTeam))?.shortName}</Typography>
+                      <Typography variant="h6">{findTeamById(homeTeam)?.shortName}</Typography>
                     </Box>
                     
                     <Box>
@@ -268,9 +317,9 @@ const HalfTimePrediction: React.FC = () => {
 
                     <Box sx={{ textAlign: 'center' }}>
                       <Avatar sx={{ width: 60, height: 60, bgcolor: 'secondary.main', mb: 1 }}>
-                        {mockTeams.find(t => t.id === parseInt(awayTeam))?.crest}
+                        {findTeamById(awayTeam)?.crest}
                       </Avatar>
-                      <Typography variant="h6">{mockTeams.find(t => t.id === parseInt(awayTeam))?.shortName}</Typography>
+                      <Typography variant="h6">{findTeamById(awayTeam)?.shortName}</Typography>
                     </Box>
                   </Box>
 

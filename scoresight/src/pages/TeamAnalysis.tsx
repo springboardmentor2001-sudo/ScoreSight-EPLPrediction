@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -23,13 +23,57 @@ import {
   SportsSoccer,
   Insights
 } from '@mui/icons-material';
-import { mockTeams } from '../services/mockData';
+import { footballAPI } from '../services/footballApi';
+
+// Add interface for Team
+interface Team {
+  id: number;
+  name: string;
+  shortName: string;
+  crest: string;
+}
+
+interface Match {
+  opponent: string;
+  result: string;
+  score: string;
+  home: boolean;
+}
+
+interface UpcomingMatch {
+  opponent: string;
+  home: boolean;
+  date: string;
+}
 
 const TeamAnalysis: React.FC = () => {
-  const [selectedTeam, setSelectedTeam] = useState(mockTeams[0]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [teamsLoading, setTeamsLoading] = useState(true);
 
-  // Mock team stats
+  // Fetch teams from API
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const teamsData = await footballAPI.getTeams();
+        const teamsList = teamsData.teams || [];
+        setTeams(teamsList);
+        if (teamsList.length > 0) {
+          setSelectedTeam(teamsList[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        setTeams([]);
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  // Mock team stats (will be replaced with real API data)
   const teamStats = {
     form: ['W', 'W', 'D', 'L', 'W'],
     attack: 84,
@@ -88,6 +132,32 @@ const TeamAnalysis: React.FC = () => {
     );
   };
 
+  // Helper function to find team by short name
+  const findTeamByShortName = (shortName: string) => 
+    teams.find(team => team.shortName === shortName);
+
+  if (teamsLoading) {
+    return (
+      <Box>
+        <Typography variant="h3" component="h1" gutterBottom>
+          Team Analysis
+        </Typography>
+        <Typography variant="body1">Loading teams...</Typography>
+      </Box>
+    );
+  }
+
+  if (!selectedTeam) {
+    return (
+      <Box>
+        <Typography variant="h3" component="h1" gutterBottom>
+          Team Analysis
+        </Typography>
+        <Typography variant="body1">No teams available</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Header */}
@@ -108,7 +178,7 @@ const TeamAnalysis: React.FC = () => {
             SELECT TEAM
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {mockTeams.map((team) => (
+            {teams.map((team) => (
               <Button
                 key={team.id}
                 variant={selectedTeam.id === team.id ? "contained" : "outlined"}
@@ -255,7 +325,7 @@ const TeamAnalysis: React.FC = () => {
                         VS
                       </Typography>
                       <Avatar sx={{ width: 40, height: 40, bgcolor: 'secondary.main' }}>
-                        {mockTeams.find(t => t.shortName === match.opponent)?.crest}
+                        {findTeamByShortName(match.opponent)?.crest}
                       </Avatar>
                     </Box>
                     <Box sx={{ textAlign: 'right' }}>
