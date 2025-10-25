@@ -9,6 +9,7 @@ import TeamAnalysis from './pages/TeamAnalysis';
 import ChatBotPage from './pages/ChatBotPage';
 import HalfTimePrediction from './pages/HalfTimePrediction';
 import ApiStatus from './components/common/ApiStatus';
+import PredictionPage from './pages/PredictionPage';
 
 const darkTheme = createTheme({
   palette: {
@@ -93,6 +94,7 @@ function App() {
             // And in routes:
             <Route path="/chat" element={<ChatBotPage />} />
             <Route path="/predictions/half-time" element={<HalfTimePrediction />} />
+            <Route path="/prediction" element={<PredictionPage />} />
             <Route 
               path="/chat" 
               element={

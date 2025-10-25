@@ -23,6 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import liveDataService from '../services/liveDataService';
 import { footballAPI } from '../services/footballApi';
+import { Calculate } from '@mui/icons-material';
 
 // Add these interfaces for our data
 interface Team {
@@ -240,7 +241,7 @@ const Dashboard: React.FC = () => {
           transform: 'translateY(-4px)',
           boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
         }
-      }}>
+      }}>  
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box>
@@ -401,6 +402,19 @@ const Dashboard: React.FC = () => {
             Powered by ensemble models trained on 10 seasons of Premier League data.
           </Typography>
         </Box>
+        
+<Button 
+  variant="contained" 
+  size="large"
+  onClick={() => navigate('/prediction')}
+  startIcon={<Calculate />}
+  sx={{ 
+    background: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
+    fontWeight: '600'
+  }}
+>
+  Match Predictor
+</Button>
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
           <Button 
             variant="contained" 
