@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/common/Layout';
@@ -10,6 +10,8 @@ import ChatBotPage from './pages/ChatBotPage';
 import HalfTimePrediction from './pages/HalfTimePrediction';
 import ApiStatus from './components/common/ApiStatus';
 import PredictionPage from './pages/PredictionPage';
+import AuthPage from './pages/AuthPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const darkTheme = createTheme({
   palette: {
@@ -80,40 +82,120 @@ const darkTheme = createTheme({
   },
 });
 
+// Protected Route component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
+};
+
+// Public Route component (redirect to dashboard if already authenticated)
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/" />;
+};
+
+function AppContent() {
+  return (
+    <Router>
+      <Routes>
+        {/* Public route - only accessible when not logged in */}
+        <Route 
+          path="/auth" 
+          element={
+            <PublicRoute>
+              <AuthPage />
+            </PublicRoute>
+          } 
+        />
+        
+        {/* Protected routes - only accessible when logged in */}
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/predictions/pre-match" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <PreMatchPrediction />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/team-analysis" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <TeamAnalysis />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/chat" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <ChatBotPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/predictions/half-time" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <HalfTimePrediction />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/prediction" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <PredictionPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Redirect any unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Router>
-        <Layout>
-          <ApiStatus />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/predictions/pre-match" element={<PreMatchPrediction />} />
-            <Route path="/team-analysis" element={<TeamAnalysis />} />
-            // And in routes:
-            <Route path="/chat" element={<ChatBotPage />} />
-            <Route path="/predictions/half-time" element={<HalfTimePrediction />} />
-            <Route path="/prediction" element={<PredictionPage />} />
-            <Route 
-              path="/chat" 
-              element={
-                <div style={{
-                  background: 'red', 
-                  color: 'white', 
-                  padding: '50px',
-                  fontSize: '24px',
-                  fontWeight: 'bold'
-                }}>
-                  🎯 CHATBOT ROUTE IS WORKING! 🎯
-                </div>
-              } 
-            />
-          </Routes>
-        </Layout>
-      </Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
-    
   );
 }
 

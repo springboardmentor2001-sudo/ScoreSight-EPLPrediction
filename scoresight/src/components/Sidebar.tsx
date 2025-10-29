@@ -7,26 +7,36 @@ import {
   ListItemIcon,
   ListItemText,
   Box,
-  Typography
+  Typography,
+  Button,
+  Divider
 } from '@mui/material';
 import { 
   Dashboard, 
   Analytics, 
   SmartToy,
-  SportsSoccer 
+  SportsSoccer,
+  Logout
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout, user } = useAuth();
 
   const menuItems = [
-    { text: 'DASHBOARD', icon: <Dashboard />, path: '/dashboard' },
+    { text: 'DASHBOARD', icon: <Dashboard />, path: '/' },
     { text: 'AI PREDICTIONS', icon: <Analytics />, path: '/predictions/pre-match' },
     { text: 'TEAM ANALYSIS', icon: <SportsSoccer />, path: '/team-analysis' },
-    { text: 'AI ANALYST', icon: <SmartToy />, path: '/ai-analyst' },
+    { text: 'AI ANALYST', icon: <SmartToy />, path: '/chat' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
 
   return (
     <Drawer
@@ -39,6 +49,8 @@ const Sidebar: React.FC = () => {
           boxSizing: 'border-box',
           backgroundColor: '#1e293b',
           color: 'white',
+          display: 'flex',
+          flexDirection: 'column'
         },
       }}
     >
@@ -46,9 +58,16 @@ const Sidebar: React.FC = () => {
         <Typography variant="h6" fontWeight="bold" color="primary.main">
           SCORESIGHT
         </Typography>
+        {user && (
+          <Typography variant="body2" sx={{ color: '#b0bec5', mt: 1 }}>
+            Welcome, {user.firstName}
+          </Typography>
+        )}
       </Box>
       
-      <List>
+      <Divider sx={{ borderColor: '#334155', mb: 1 }} />
+      
+      <List sx={{ flexGrow: 1 }}>
         {menuItems.map((item) => (
           <ListItem
             key={item.text}
@@ -63,7 +82,7 @@ const Sidebar: React.FC = () => {
               sx={{
                 backgroundColor: location.pathname === item.path ? 'primary.main' : 'transparent',
                 '&:hover': {
-                  backgroundColor: 'primary.dark',
+                  backgroundColor: location.pathname === item.path ? 'primary.main' : 'primary.dark',
                 },
                 borderRadius: 1,
               }}
@@ -76,6 +95,26 @@ const Sidebar: React.FC = () => {
           </ListItem>
         ))}
       </List>
+
+      {/* Logout Button */}
+      <Box sx={{ p: 2 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<Logout />}
+          onClick={handleLogout}
+          sx={{
+            color: '#f87171',
+            borderColor: '#f87171',
+            '&:hover': {
+              backgroundColor: 'rgba(248, 113, 113, 0.08)',
+              borderColor: '#ef4444',
+            },
+          }}
+        >
+          LOGOUT
+        </Button>
+      </Box>
     </Drawer>
   );
 };
