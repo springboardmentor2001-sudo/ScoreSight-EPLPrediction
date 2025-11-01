@@ -1,38 +1,66 @@
-// Mock AI service - replace with real OpenAI API later
-export const getAIResponse = async (userMessage: string): Promise<string> => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const lowerMessage = userMessage.toLowerCase();
-  
-  if (lowerMessage.includes('why') && lowerMessage.includes('predict')) {
-    return "Our prediction is based on team form, head-to-head records, and home advantage. The home team has won 4 of their last 5 matches.";
-  }
-  
-  if (lowerMessage.includes('compare')) {
-    return "Manchester City has better attack (92/100) while Liverpool has stronger defense (88/100). City's home form gives them the edge.";
-  }
-  
-  if (lowerMessage.includes('bet')) {
-    return "Based on our analysis, Both Teams to Score has good value with 68% probability.";
-  }
-  
-  return "I can help explain predictions, compare teams, or analyze match statistics. What would you like to know?";
-};
+// scoresight/src/services/chatService.ts
 
-export const quickQuestions = [
-  {
-    id: '1',
-    question: 'Explain Man City vs Liverpool prediction',
-    category: 'predictions'
-  },
-  {
-    id: '2',
-    question: 'Compare Arsenal and Tottenham',
-    category: 'teams'
-  },
-  {
-    id: '3', 
-    question: 'Best betting value this weekend?',
-    category: 'betting'
+export interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  source?: string;
+  confidence?: string;
+}
+
+export interface ChatResponse {
+  success: boolean;
+  question: string;
+  response: string;
+  source: string;
+  confidence: string;
+  timestamp: string;
+}
+
+export interface Suggestion {
+  suggestions: string[];
+}
+
+class ChatService {
+  private baseUrl = 'http://localhost:8000'; // Your FastAPI backend
+
+  async sendMessage(message: string): Promise<ChatResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Chat service error:', error);
+      throw new Error('Failed to send message. Please try again.');
+    }
   }
-];
+
+  async getSuggestions(): Promise<string[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat/suggestions`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: Suggestion = await response.json();
+      return data.suggestions;
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+      return [];
+    }
+  }
+}
+
+export const chatService = new ChatService();

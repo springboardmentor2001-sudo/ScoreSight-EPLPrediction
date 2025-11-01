@@ -11,10 +11,125 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 import xgboost as xgb
 from xgboost import XGBClassifier
 from typing import Dict, List, Any
+import re
+from typing import List, Dict, Any
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Get the correct paths to model files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ML_MODELS_DIR = os.path.join(BASE_DIR, '..', 'ml-models')
+
+# =============================================================================
+# CORE FUNCTIONS THAT MUST COME FIRST
+# =============================================================================
+
+def enhanced_map_team_name(api_team_name):
+    """Comprehensive team mapping for all Premier League team variations"""
+    
+    # Complete mapping dictionary - covers all API variations
+    team_mapping = {
+        # Arsenal
+        'Arsenal FC': 'Arsenal', 'Arsenal': 'Arsenal',
+        
+        # Aston Villa
+        'Aston Villa FC': 'Aston Villa', 'Aston Villa': 'Aston Villa',
+        
+        # Bournemouth
+        'AFC Bournemouth': 'Bournemouth', 'Bournemouth': 'Bournemouth',
+        
+        # Brentford
+        'Brentford FC': 'Brentford', 'Brentford': 'Brentford',
+        
+        # Brighton
+        'Brighton & Hove Albion FC': 'Brighton', 'Brighton and Hove Albion': 'Brighton', 
+        'Brighton': 'Brighton',
+        
+        # Burnley
+        'Burnley FC': 'Burnley', 'Burnley': 'Burnley',
+        
+        # Chelsea
+        'Chelsea FC': 'Chelsea', 'Chelsea': 'Chelsea',
+        
+        # Crystal Palace
+        'Crystal Palace FC': 'Crystal Palace', 'Crystal Palace': 'Crystal Palace',
+        
+        # Everton
+        'Everton FC': 'Everton', 'Everton': 'Everton',
+        
+        # Fulham
+        'Fulham FC': 'Fulham', 'Fulham': 'Fulham',
+        
+        # Liverpool
+        'Liverpool FC': 'Liverpool', 'Liverpool': 'Liverpool',
+        
+        # Manchester City
+        'Manchester City FC': 'Man City', 'Manchester City': 'Man City',
+        
+        # Manchester United
+        'Manchester United FC': 'Man United', 'Manchester United': 'Man United',
+        
+        # Newcastle
+        'Newcastle United FC': 'Newcastle', 'Newcastle United': 'Newcastle',
+        'Newcastle': 'Newcastle',
+        
+        # Nottingham Forest
+        'Nottingham Forest FC': "Nott'm Forest", 'Nottingham Forest': "Nott'm Forest",
+        
+        # Sheffield United
+        'Sheffield United FC': 'Sheffield United', 'Sheffield United': 'Sheffield United',
+        
+        # Tottenham
+        'Tottenham Hotspur FC': 'Tottenham', 'Tottenham Hotspur': 'Tottenham',
+        'Tottenham': 'Tottenham',
+        
+        # West Ham
+        'West Ham United FC': 'West Ham', 'West Ham United': 'West Ham',
+        'West Ham': 'West Ham',
+        
+        # Wolves
+        'Wolverhampton Wanderers FC': 'Wolves', 'Wolverhampton Wanderers': 'Wolves',
+        'Wolves': 'Wolves',
+        
+        # Other teams
+        'Leeds United': 'Leeds', 'Leeds United FC': 'Leeds',
+        'Leicester City': 'Leicester', 'Leicester City FC': 'Leicester',
+        'Southampton FC': 'Southampton', 'Southampton': 'Southampton',
+        'Watford FC': 'Watford', 'Watford': 'Watford',
+        'Norwich City': 'Norwich', 'Norwich City FC': 'Norwich',
+        'Aston Villa FC': 'Aston Villa'
+    }
+    
+    # Direct mapping lookup
+    if api_team_name in team_mapping:
+        mapped_name = team_mapping[api_team_name]
+        print(f"✅ Team mapped: '{api_team_name}' -> '{mapped_name}'")
+        return mapped_name
+    
+    # Try removing common suffixes
+    clean_name = api_team_name
+    suffixes = [' FC', ' United', ' City', ' & Hove Albion', ' and Hove Albion', ' Hotspur']
+    for suffix in suffixes:
+        if suffix in clean_name:
+            clean_name = clean_name.replace(suffix, '')
+    
+    # Check if cleaned name exists in trained teams
+    trained_teams = get_all_trained_teams()
+    for team in trained_teams:
+        if team.lower() == clean_name.lower():
+            print(f"✅ Cleaned team mapped: '{api_team_name}' -> '{team}'")
+            return team
+    
+    # Final fallback - return original name
+    print(f"⚠️  Could not map team: '{api_team_name}'")
+    return api_team_name
+
+# =============================================================================
+# LOAD ML MODELS
+# =============================================================================
 
 # Load your NEW ML models
 try:
@@ -49,7 +164,7 @@ except Exception as e:
     ml_models = None
 
 # =============================================================================
-# TEAM ANALYTICS ENGINE - USING YOUR HISTORICAL DATASET (2010-2020)
+# TEAM ANALYTICS ENGINE
 # =============================================================================
 
 class TeamAnalyzer:
@@ -59,6 +174,20 @@ class TeamAnalyzer:
         self.historical_data = None
         self.teams_stats = {}
         self.load_historical_data()
+
+    def get_all_trained_teams(self):
+        """Get all unique teams from training data"""
+        return [
+            'Arsenal', 'Aston Villa', 'Birmingham', 'Blackburn', 'Blackpool',
+            'Bolton', 'Bournemouth', 'Bradford', 'Brentford', 'Brighton',
+            'Burnley', 'Cardiff', 'Charlton', 'Chelsea', 'Coventry', 
+            'Crystal Palace', 'Derby', 'Everton', 'Fulham', 'Huddersfield',
+            'Hull', 'Ipswich', 'Leeds', 'Leicester', 'Liverpool',
+            'Man City', 'Man United', 'Middlesbrough', 'Newcastle', 'Norwich',
+            'Portsmouth', 'QPR', 'Reading', 'Sheffield United', 'Southampton',
+            'Stoke', 'Sunderland', 'Swansea', 'Tottenham', 'Watford',
+            'West Brom', 'West Ham', 'Wigan', 'Wolves', "Nott'm Forest"
+        ]
     
     def load_historical_data(self):
         """Load and process your historical EPL dataset from ml-models folder"""
@@ -69,7 +198,6 @@ class TeamAnalyzer:
                 self.historical_data = pd.read_csv(historical_data_path)
                 print(f"✅ Loaded historical data from: {historical_data_path}")
                 print(f"📊 Dataset shape: {self.historical_data.shape}")
-                print(f"📊 Columns: {self.historical_data.columns.tolist()}")
                 self.calculate_team_stats()
                 return
             except Exception as e:
@@ -388,14 +516,10 @@ class TeamAnalyzer:
         else:
             form_trend = 'stable'
         
-        # Get common opponents performance
-        common_opponents = self.get_common_opponents_performance(mapped_name)
-        
         return {
             **base_stats,
             'recent_matches': recent_matches,
             'form_trend': form_trend,
-            'common_opponents': common_opponents,
             'analysis': self.generate_team_analysis(base_stats, form_trend)
         }
     
@@ -418,17 +542,6 @@ class TeamAnalyzer:
         else:
             return 'stable'
     
-    def get_common_opponents_performance(self, team_name: str) -> Dict[str, Any]:
-        """Get performance against common opponents"""
-        if self.historical_data is None:
-            return {}
-        
-        return {
-            'top_teams_performance': 'average',
-            'bottom_teams_performance': 'strong',
-            'rival_teams_performance': 'competitive'
-        }
-    
     def generate_team_analysis(self, stats: Dict, form_trend: str) -> str:
         """Generate AI analysis of team performance"""
         analysis_parts = []
@@ -443,7 +556,7 @@ class TeamAnalyzer:
         else:
             analysis_parts.append("Developing team with potential")
         
-        # Attack analysis
+        # Attack anagivelysis
         if stats['avg_goals_for'] >= 2.0:
             analysis_parts.append("Potent attacking force")
         elif stats['avg_goals_for'] >= 1.5:
@@ -478,6 +591,35 @@ class TeamAnalyzer:
 # Initialize team analyzer
 team_analyzer = TeamAnalyzer()
 
+# =============================================================================
+# IMPORT CHATBOT SERVICE (Replace the placeholder with this)
+# =============================================================================
+# =============================================================================
+# IMPORT CHATBOT SERVICE
+# =============================================================================
+
+try:
+    from chatbot_service import chatbot_service
+    print("✅ Chatbot service imported successfully!")
+except ImportError as e:
+    print(f"❌ Could not import chatbot service: {e}")
+    # Fallback placeholder
+    class ChatbotService:
+        def __init__(self):
+            self.available = False
+        
+        async def process_question(self, question: str):
+            return {
+                "source": "error",
+                "response": "Chatbot service is currently unavailable. Please try again later.",
+                "confidence": "low"
+            }
+    
+    chatbot_service = ChatbotService()
+# =============================================================================
+# FASTAPI APP
+# =============================================================================
+
 app = FastAPI(title="Scoresight API", version="1.0.0")
 
 # CORS middleware to allow React frontend to access the API
@@ -492,121 +634,9 @@ app.add_middleware(
 FOOTBALL_API_TOKEN = "b839a17637ca4abc953080c5f3761314"
 BASE_URL = "https://api.football-data.org/v4"
 
-# COMPREHENSIVE TEAM NAME MAPPING
-def get_all_trained_teams():
-    """Get all unique teams from your training data"""
-    trained_teams = [
-        'Arsenal', 'Aston Villa', 'Birmingham', 'Blackburn', 'Blackpool',
-        'Bolton', 'Bournemouth', 'Bradford', 'Brentford', 'Brighton',
-        'Burnley', 'Cardiff', 'Charlton', 'Chelsea', 'Coventry', 
-        'Crystal Palace', 'Derby', 'Everton', 'Fulham', 'Huddersfield',
-        'Hull', 'Ipswich', 'Leeds', 'Leicester', 'Liverpool',
-        'Man City', 'Man United', 'Middlesbrough', 'Newcastle', 'Norwich',
-        'Portsmouth', 'QPR', 'Reading', 'Sheffield United', 'Southampton',
-        'Stoke', 'Sunderland', 'Swansea', 'Tottenham', 'Watford',
-        'West Brom', 'West Ham', 'Wigan', 'Wolves', "Nott'm Forest"
-    ]
-    return trained_teams
-
-def enhanced_map_team_name(api_team_name):
-    """Comprehensive team mapping for all Premier League team variations"""
-    
-    # Complete mapping dictionary - covers all API variations
-    team_mapping = {
-        # Arsenal
-        'Arsenal FC': 'Arsenal', 'Arsenal': 'Arsenal',
-        
-        # Aston Villa
-        'Aston Villa FC': 'Aston Villa', 'Aston Villa': 'Aston Villa',
-        
-        # Bournemouth
-        'AFC Bournemouth': 'Bournemouth', 'Bournemouth': 'Bournemouth',
-        
-        # Brentford
-        'Brentford FC': 'Brentford', 'Brentford': 'Brentford',
-        
-        # Brighton
-        'Brighton & Hove Albion FC': 'Brighton', 'Brighton and Hove Albion': 'Brighton', 
-        'Brighton': 'Brighton',
-        
-        # Burnley
-        'Burnley FC': 'Burnley', 'Burnley': 'Burnley',
-        
-        # Chelsea
-        'Chelsea FC': 'Chelsea', 'Chelsea': 'Chelsea',
-        
-        # Crystal Palace
-        'Crystal Palace FC': 'Crystal Palace', 'Crystal Palace': 'Crystal Palace',
-        
-        # Everton
-        'Everton FC': 'Everton', 'Everton': 'Everton',
-        
-        # Fulham
-        'Fulham FC': 'Fulham', 'Fulham': 'Fulham',
-        
-        # Liverpool
-        'Liverpool FC': 'Liverpool', 'Liverpool': 'Liverpool',
-        
-        # Manchester City
-        'Manchester City FC': 'Man City', 'Manchester City': 'Man City',
-        
-        # Manchester United
-        'Manchester United FC': 'Man United', 'Manchester United': 'Man United',
-        
-        # Newcastle
-        'Newcastle United FC': 'Newcastle', 'Newcastle United': 'Newcastle',
-        'Newcastle': 'Newcastle',
-        
-        # Nottingham Forest
-        'Nottingham Forest FC': "Nott'm Forest", 'Nottingham Forest': "Nott'm Forest",
-        
-        # Sheffield United
-        'Sheffield United FC': 'Sheffield United', 'Sheffield United': 'Sheffield United',
-        
-        # Tottenham
-        'Tottenham Hotspur FC': 'Tottenham', 'Tottenham Hotspur': 'Tottenham',
-        'Tottenham': 'Tottenham',
-        
-        # West Ham
-        'West Ham United FC': 'West Ham', 'West Ham United': 'West Ham',
-        'West Ham': 'West Ham',
-        
-        # Wolves
-        'Wolverhampton Wanderers FC': 'Wolves', 'Wolverhampton Wanderers': 'Wolves',
-        'Wolves': 'Wolves',
-        
-        # Other teams
-        'Leeds United': 'Leeds', 'Leeds United FC': 'Leeds',
-        'Leicester City': 'Leicester', 'Leicester City FC': 'Leicester',
-        'Southampton FC': 'Southampton', 'Southampton': 'Southampton',
-        'Watford FC': 'Watford', 'Watford': 'Watford',
-        'Norwich City': 'Norwich', 'Norwich City FC': 'Norwich',
-        'Aston Villa FC': 'Aston Villa'
-    }
-    
-    # Direct mapping lookup
-    if api_team_name in team_mapping:
-        mapped_name = team_mapping[api_team_name]
-        print(f"✅ Team mapped: '{api_team_name}' -> '{mapped_name}'")
-        return mapped_name
-    
-    # Try removing common suffixes
-    clean_name = api_team_name
-    suffixes = [' FC', ' United', ' City', ' & Hove Albion', ' and Hove Albion', ' Hotspur']
-    for suffix in suffixes:
-        if suffix in clean_name:
-            clean_name = clean_name.replace(suffix, '')
-    
-    # Check if cleaned name exists in trained teams
-    trained_teams = get_all_trained_teams()
-    for team in trained_teams:
-        if team.lower() == clean_name.lower():
-            print(f"✅ Cleaned team mapped: '{api_team_name}' -> '{team}'")
-            return team
-    
-    # Final fallback - return original name
-    print(f"⚠️  Could not map team: '{api_team_name}'")
-    return api_team_name
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
 
 def convert_numpy_types(obj):
     """Convert numpy types to Python native types for JSON serialization"""
@@ -815,7 +845,52 @@ def fix_xgboost_attributes(model):
                         setattr(estimator, attr, default_value)
 
 # =============================================================================
-# TEAM ANALYTICS API ENDPOINTS - FIXED
+# CHATBOT API ENDPOINTS (Will be connected to new chatbot service)
+# =============================================================================
+
+@app.post("/api/chat/message")
+async def chat_message(message_data: dict):
+    """Main chat endpoint that will use the new chatbot service"""
+    try:
+        question = message_data.get('message', '')
+        
+        if not question:
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        # Process the question using the chatbot service
+        bot_response = await chatbot_service.process_question(question)
+        
+        return {
+            "success": True,
+            "question": question,
+            "response": bot_response["response"],
+            "source": bot_response["source"],
+            "confidence": bot_response["confidence"],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
+
+@app.get("/api/chat/suggestions")
+async def get_chat_suggestions():
+    """Get suggested questions for the chat"""
+    suggestions = [
+        "Predict Manchester City vs Liverpool",
+        "Show me Arsenal's recent form",
+        "Chelsea vs Tottenham head to head",
+        "Who will win the Premier League?",
+        "Explain the offside rule",
+        "Best Premier League strikers 2024",
+        "Manchester United team analysis",
+        "Newcastle vs Brighton prediction"
+    ]
+    
+    return {"suggestions": suggestions}
+
+# =============================================================================
+# TEAM ANALYTICS API ENDPOINTS
 # =============================================================================
 
 @app.get("/api/teams/{team_name}/analysis")
@@ -963,7 +1038,7 @@ async def get_all_teams_analysis():
         raise HTTPException(status_code=500, detail=f"Error getting all teams analysis: {str(e)}")
 
 # =============================================================================
-# EXISTING API ENDPOINTS (UNCHANGED)
+# EXISTING API ENDPOINTS
 # =============================================================================
 
 @app.get("/")
@@ -1057,6 +1132,68 @@ async def get_teams():
         print(f"Football API error: {str(e)}")
         return {"teams": []}
 
+async def predict_match_internal(home_team: str, away_team: str):
+    """Internal prediction function for chatbot use"""
+    if ml_models is None:
+        return {"error": "ML model not loaded"}
+    
+    # Map team names to your model's format
+    home_team_mapped = enhanced_map_team_name(home_team)
+    away_team_mapped = enhanced_map_team_name(away_team)
+    
+    # Create features for pre-match prediction
+    features, feature_columns = create_pre_match_features(home_team_mapped, away_team_mapped)
+    
+    # Preprocess features
+    processed_features = preprocess_features(
+        features, 
+        feature_columns, 
+        ml_models['pre_match_preprocessing']
+    )
+
+    # Get prediction probabilities
+    model = ml_models['pre_match_model']
+    fix_xgboost_attributes(model)
+
+    # Make prediction
+    probabilities = model.predict_proba(processed_features)[0]
+    
+    # Map probabilities to outcomes [Away, Draw, Home]
+    away_win_prob = float(probabilities[0])
+    draw_prob = float(probabilities[1]) 
+    home_win_prob = float(probabilities[2])
+
+    # Determine confidence and predicted outcome
+    max_prob = max(home_win_prob, draw_prob, away_win_prob)
+    confidence = "high" if max_prob > 0.6 else "medium" if max_prob > 0.45 else "low"
+    
+    if home_win_prob > away_win_prob and home_win_prob > draw_prob:
+        predicted_outcome = "HOME"
+        predicted_score = "2-1"
+    elif away_win_prob > home_win_prob and away_win_prob > draw_prob:
+        predicted_outcome = "AWAY" 
+        predicted_score = "1-2"
+    else:
+        predicted_outcome = "DRAW"
+        predicted_score = "1-1"
+
+    return {
+        "home_team": home_team,
+        "away_team": away_team, 
+        "home_win_prob": home_win_prob,
+        "draw_prob": draw_prob,
+        "away_win_prob": away_win_prob,
+        "predicted_outcome": predicted_outcome,
+        "predicted_score": predicted_score,
+        "confidence": confidence,
+        "keyFactors": [
+            "Team form analysis",
+            "Head-to-head record", 
+            "Home advantage",
+            "Recent performance"
+        ]
+    }
+
 @app.get("/api/predict")
 async def predict_match(home_team: str, away_team: str):
     """Real prediction using your 75% accurate ML model"""
@@ -1067,67 +1204,14 @@ async def predict_match(home_team: str, away_team: str):
                 "model_loaded": False
             }
 
-        # Map team names to your model's format
-        home_team_mapped = enhanced_map_team_name(home_team)
-        away_team_mapped = enhanced_map_team_name(away_team)
-
-        print(f"Team mapping: '{home_team}' -> '{home_team_mapped}'")
-        print(f"Team mapping: '{away_team}' -> '{away_team_mapped}'")
+        prediction_result = await predict_match_internal(home_team, away_team)
         
-        # Create features for pre-match prediction
-        features, feature_columns = create_pre_match_features(home_team_mapped, away_team_mapped)
-        
-        # Preprocess features
-        processed_features = preprocess_features(
-            features, 
-            feature_columns, 
-            ml_models['pre_match_preprocessing']
-        )
-
-        # Get prediction probabilities
-        model = ml_models['pre_match_model']
-
-        # Fix XGBoost attributes
-        fix_xgboost_attributes(model)
-
-        # Make prediction
-        probabilities = model.predict_proba(processed_features)[0]
-        
-        # Map probabilities to outcomes [Away, Draw, Home]
-        away_win_prob = float(probabilities[0])
-        draw_prob = float(probabilities[1]) 
-        home_win_prob = float(probabilities[2])
-
-        # Determine confidence and predicted outcome
-        max_prob = max(home_win_prob, draw_prob, away_win_prob)
-        confidence = "high" if max_prob > 0.6 else "medium" if max_prob > 0.45 else "low"
-        
-        if home_win_prob > away_win_prob and home_win_prob > draw_prob:
-            predicted_outcome = "HOME"
-            predicted_score = "2-1"
-        elif away_win_prob > home_win_prob and away_win_prob > draw_prob:
-            predicted_outcome = "AWAY" 
-            predicted_score = "1-2"
-        else:
-            predicted_outcome = "DRAW"
-            predicted_score = "1-1"
+        if 'error' in prediction_result:
+            return prediction_result
 
         return {
-            "home_team": home_team,
-            "away_team": away_team, 
-            "home_win_prob": home_win_prob,
-            "draw_prob": draw_prob,
-            "away_win_prob": away_win_prob,
-            "predicted_outcome": predicted_outcome,
-            "predicted_score": predicted_score,
-            "confidence": confidence,
-            "keyFactors": [
-                "Team form analysis",
-                "Head-to-head record", 
-                "Home advantage",
-                "Recent performance"
-            ],
-            "aiExplanation": f"ML model prediction: {max_prob*100:.1f}% chance of {predicted_outcome.lower()} victory.",
+            **prediction_result,
+            "aiExplanation": f"ML model prediction: {max(prediction_result['home_win_prob'], prediction_result['draw_prob'], prediction_result['away_win_prob'])*100:.1f}% chance of {prediction_result['predicted_outcome'].lower()} victory.",
             "model_used": "Real ML Model (75% accuracy)",
             "model_loaded": True,
             "real_prediction": True
@@ -1399,6 +1483,14 @@ async def half_time_predict(home_team: str, away_team: str, home_score: int = 0,
             "model_loaded": ml_models is not None,
             "real_prediction": False
         }
+
+# =============================================================================
+# IMPORT ACTUAL CHATBOT SERVICE (This will replace the placeholder)
+# =============================================================================
+
+# Once we create chatbot_service.py, we'll replace the placeholder with:
+# from chatbot_service import ChatbotService
+# chatbot_service = ChatbotService()
 
 if __name__ == "__main__":
     import uvicorn

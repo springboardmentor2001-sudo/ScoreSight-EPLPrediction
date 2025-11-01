@@ -125,7 +125,7 @@ const TeamAnalysis: React.FC = () => {
 
     fetchTeamStats();
   }, [selectedTeam]);
-
+ 
   const StatCard: React.FC<{ title: string; value: number; max?: number; color?: string }> = 
     ({ title, value, max = 100, color = '#00d4ff' }) => (
     <Card sx={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #2d2d4e 100%)' }}>
