@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -6,7 +6,8 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Paper
+  Paper,
+  Fade
 } from '@mui/material';
 import { SignupFormData } from '../../types/auth';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,8 +25,13 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { signup, authMessage, clearMessage } = useAuth();
+
+  useEffect(() => {
+    // Clear message when component mounts
+    clearMessage();
+  }, [clearMessage]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -33,23 +39,25 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
       [e.target.name]: e.target.value
     });
     setError('');
+    clearMessage();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    clearMessage();
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords don\'t match! Are you seeing double? 👀');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError('Password needs at least 6 characters - make it strong! 💪');
       return;
     }
 
-    setLoading(true);
+    setLocalLoading(true);
 
     try {
       const success = await signup(
@@ -59,13 +67,21 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
         formData.lastName
       );
       if (!success) {
-        setError('Signup failed. Please try again.');
+        setError('Let\'s try that again! The goal is wide open! ⚽');
       }
     } catch (err) {
-      setError('Signup failed. Please try again.');
+      setError('Signup failed. Even VAR can\'t help with this one! 🎥');
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
+  };
+
+  const funnyPlaceholders = {
+    firstName: "Your first name (no nicknames!) 👤",
+    lastName: "Your last name 🏷️",
+    email: "Your best email 📧",
+    password: "Create a super secret password! 🕵️",
+    confirmPassword: "Type it again (no pressure!) 🔁"
   };
 
   return (
@@ -76,20 +92,46 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
         background: 'linear-gradient(135deg, #0a1929 0%, #102a43 100%)',
         border: '1px solid #1e3a5c',
         borderRadius: 3,
-        color: 'white'
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
+      {/* Animated background elements */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: -30,
+          left: -30,
+          width: 80,
+          height: 80,
+          background: 'radial-gradient(circle, #00ff88 0%, transparent 70%)',
+          opacity: 0.1,
+          animation: 'pulse 3s infinite'
+        }}
+      />
+      
       <Typography variant="h4" component="h1" gutterBottom fontWeight="700" color="primary">
         SCORESIGHT
       </Typography>
       <Typography variant="h6" gutterBottom sx={{ color: '#b0bec5', mb: 3 }}>
-        Create Your Account
+        Join the Prediction Elite! 🚀
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Fade in={true}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        </Fade>
+      )}
+
+      {authMessage && !error && (
+        <Fade in={true}>
+          <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+            {authMessage}
+          </Alert>
+        </Fade>
       )}
 
       <form onSubmit={handleSubmit}>
@@ -103,6 +145,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
             required
             margin="normal"
             variant="outlined"
+            placeholder={funnyPlaceholders.firstName}
             sx={{
               '& .MuiOutlinedInput-root': {
                 color: 'white',
@@ -130,6 +173,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
             required
             margin="normal"
             variant="outlined"
+            placeholder={funnyPlaceholders.lastName}
             sx={{
               '& .MuiOutlinedInput-root': {
                 color: 'white',
@@ -159,6 +203,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
           required
           margin="normal"
           variant="outlined"
+          placeholder={funnyPlaceholders.email}
           sx={{
             '& .MuiOutlinedInput-root': {
               color: 'white',
@@ -187,6 +232,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
           required
           margin="normal"
           variant="outlined"
+          placeholder={funnyPlaceholders.password}
           sx={{
             '& .MuiOutlinedInput-root': {
               color: 'white',
@@ -215,6 +261,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
           required
           margin="normal"
           variant="outlined"
+          placeholder={funnyPlaceholders.confirmPassword}
           sx={{
             '& .MuiOutlinedInput-root': {
               color: 'white',
@@ -238,46 +285,55 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
           fullWidth
           variant="contained"
           size="large"
-          disabled={loading}
+          disabled={localLoading}
           sx={{
             mt: 3,
             mb: 2,
             py: 1.5,
-            background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+            background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
             fontWeight: '600',
             fontSize: '1rem',
+            color: 'white',
             '&:hover': {
-              background: 'linear-gradient(135deg, #1976D2 0%, #1565C0 100%)',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
+              background: 'linear-gradient(135deg, #00cc6a 0%, #00aa55 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 20px rgba(0, 255, 136, 0.4)',
             },
             '&:disabled': {
               background: '#424242',
-            }
+            },
+            transition: 'all 0.3s ease'
           }}
         >
-          {loading ? <CircularProgress size={24} /> : 'Create Account'}
+          {localLoading ? (
+            <CircularProgress size={24} sx={{ color: 'white' }} />
+          ) : (
+            'Start Predicting! 🎯'
+          )}
         </Button>
       </form>
 
       <Box textAlign="center">
-        <Typography variant="body2" sx={{ color: '#b0bec5' }}>
-          Already have an account?{' '}
-          <Button
-            onClick={onToggleMode}
-            sx={{
-              color: '#4f8cff',
-              fontWeight: '600',
-              textTransform: 'none',
-              '&:hover': {
-                backgroundColor: 'transparent',
-                color: '#2196F3',
-              }
-            }}
-          >
-            Sign In
-          </Button>
+        <Typography variant="body2" sx={{ color: '#b0bec5', mb: 1 }}>
+          Already have an account?
         </Typography>
+        <Button
+          onClick={onToggleMode}
+          sx={{
+            color: '#4f8cff',
+            fontWeight: '600',
+            textTransform: 'none',
+            fontSize: '1rem',
+            '&:hover': {
+              backgroundColor: 'transparent',
+              color: '#2196F3',
+              transform: 'scale(1.05)',
+            },
+            transition: 'all 0.2s ease'
+          }}
+        >
+          Welcome Back! 🏆
+        </Button>
       </Box>
     </Paper>
   );

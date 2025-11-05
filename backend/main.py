@@ -12,8 +12,6 @@ import xgboost as xgb
 from xgboost import XGBClassifier
 from typing import Dict, List, Any
 import re
-from typing import List, Dict, Any
-from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -26,6 +24,21 @@ ML_MODELS_DIR = os.path.join(BASE_DIR, '..', 'ml-models')
 # =============================================================================
 # CORE FUNCTIONS THAT MUST COME FIRST
 # =============================================================================
+
+def get_all_trained_teams():
+    """Return a canonical list of teams used for mapping and sample data."""
+    return [
+        'Arsenal', 'Aston Villa', 'Birmingham', 'Blackburn', 'Blackpool',
+        'Bolton', 'Bournemouth', 'Bradford', 'Brentford', 'Brighton',
+        'Burnley', 'Cardiff', 'Charlton', 'Chelsea', 'Coventry', 
+        'Crystal Palace', 'Derby', 'Everton', 'Fulham', 'Huddersfield',
+        'Hull', 'Ipswich', 'Leeds', 'Leicester', 'Liverpool',
+        'Man City', 'Man United', 'Middlesbrough', 'Newcastle', 'Norwich',
+        'Portsmouth', 'QPR', 'Reading', 'Sheffield United', 'Southampton',
+        'Stoke', 'Sunderland', 'Swansea', 'Tottenham', 'Watford',
+        'West Brom', 'West Ham', 'Wigan', 'Wolves', "Nott'm Forest"
+    ]
+
 
 def enhanced_map_team_name(api_team_name):
     """Comprehensive team mapping for all Premier League team variations"""
@@ -386,18 +399,26 @@ class TeamAnalyzer:
         away_matches['goals_against'] = away_matches['FTHG']
         away_matches['result'] = away_matches['FTR'].map({'A': 'W', 'D': 'D', 'H': 'L'})
         
-        # Combine and sort by date
+        # Combine and sort by date - FIXED DATE PARSING
         all_matches = pd.concat([home_matches, away_matches])
         
-        # Fix date parsing
+        # Fix date parsing with explicit format
         if 'Date' in all_matches.columns:
-            try:
-                all_matches['Date'] = pd.to_datetime(all_matches['Date'], dayfirst=True, errors='coerce')
-            except:
+            # Try multiple common date formats
+            date_formats = ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y']
+            
+            for date_format in date_formats:
                 try:
-                    all_matches['Date'] = pd.to_datetime(all_matches['Date'], errors='coerce')
+                    all_matches['Date'] = pd.to_datetime(all_matches['Date'], format=date_format, errors='coerce')
+                    # Check if any dates were successfully parsed
+                    if not all_matches['Date'].isna().all():
+                        print(f"✅ Successfully parsed dates with format: {date_format}")
+                        break
                 except:
-                    all_matches['Date'] = pd.to_datetime('2020-01-01')
+                    continue
+            else:
+                # If all formats fail, use flexible parsing as last resort
+                all_matches['Date'] = pd.to_datetime(all_matches['Date'], errors='coerce', infer_datetime_format=True)
             
             all_matches = all_matches.dropna(subset=['Date'])
             all_matches = all_matches.sort_values('Date', ascending=False)
@@ -464,15 +485,22 @@ class TeamAnalyzer:
             ((self.historical_data['HomeTeam'] == team2) & (self.historical_data['AwayTeam'] == team1))
         ].copy()
         
-        # Fix date parsing
+        # Fix date parsing with explicit format
         if 'Date' in matches.columns:
-            try:
-                matches['Date'] = pd.to_datetime(matches['Date'], dayfirst=True, errors='coerce')
-            except:
+            # Try multiple common date formats
+            date_formats = ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y']
+            
+            for date_format in date_formats:
                 try:
-                    matches['Date'] = pd.to_datetime(matches['Date'], errors='coerce')
+                    matches['Date'] = pd.to_datetime(matches['Date'], format=date_format, errors='coerce')
+                    # Check if any dates were successfully parsed
+                    if not matches['Date'].isna().all():
+                        break
                 except:
-                    matches['Date'] = pd.to_datetime('2020-01-01')
+                    continue
+            else:
+                # If all formats fail, use flexible parsing as last resort
+                matches['Date'] = pd.to_datetime(matches['Date'], errors='coerce', infer_datetime_format=True)
             
             matches = matches.dropna(subset=['Date'])
             matches = matches.sort_values('Date', ascending=False)
@@ -592,9 +620,6 @@ class TeamAnalyzer:
 team_analyzer = TeamAnalyzer()
 
 # =============================================================================
-# IMPORT CHATBOT SERVICE (Replace the placeholder with this)
-# =============================================================================
-# =============================================================================
 # IMPORT CHATBOT SERVICE
 # =============================================================================
 
@@ -616,6 +641,7 @@ except ImportError as e:
             }
     
     chatbot_service = ChatbotService()
+
 # =============================================================================
 # FASTAPI APP
 # =============================================================================
@@ -630,6 +656,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include authentication router (file-based JSON user store)
+try:
+    from auth import router as auth_router
+    app.include_router(auth_router)
+    print("✅ Auth router included: /api/auth endpoints are available")
+except ImportError as e:
+    print(f"❌ Could not import auth router: {e}")
+    # Create basic auth endpoints as fallback
+    @app.post("/api/auth/login")
+    async def login_fallback():
+        raise HTTPException(status_code=501, detail="Authentication not configured")
+    
+    @app.post("/api/auth/signup") 
+    async def signup_fallback():
+        raise HTTPException(status_code=501, detail="Authentication not configured")
+    
+    print("⚠️ Auth endpoints not available - install pydantic[email]")
+except Exception as e:
+    print(f"⚠️ Could not include auth router: {e}")
 
 FOOTBALL_API_TOKEN = "b839a17637ca4abc953080c5f3761314"
 BASE_URL = "https://api.football-data.org/v4"
@@ -1487,10 +1533,6 @@ async def half_time_predict(home_team: str, away_team: str, home_score: int = 0,
 # =============================================================================
 # IMPORT ACTUAL CHATBOT SERVICE (This will replace the placeholder)
 # =============================================================================
-
-# Once we create chatbot_service.py, we'll replace the placeholder with:
-# from chatbot_service import ChatbotService
-# chatbot_service = ChatbotService()
 
 if __name__ == "__main__":
     import uvicorn

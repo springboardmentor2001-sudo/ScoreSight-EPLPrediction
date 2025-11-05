@@ -1,0 +1,24 @@
+[
+  {
+    "id": "6e66bea7658b475a962bfe6ea665391d",
+    "email": "dia.swami@mitwpu.edu.in",
+    "password": "28622458fc474d679e3301f0d5bdddfa$cab713c281e487c5edd958375a35bc96c3e5fab05318aa0878e1feff60eba131",
+    "firstName": "Dia",
+    "lastName": "Swami",
+    "created_at": "2025-11-05T14:03:49.288261",
+    "last_login": "2025-11-05T14:04:54.683360",
+    "token": "c6dd69c9118e41a8af5f2ecee8b62799",
+    "is_active": true
+  },
+  {
+    "id": "94281fa9b86644d99142928832872c10",
+    "email": "diaswami9@gmail.com",
+    "password": "672f284a72404a078e33a58221fa16f5$8fd88541ab8d387f3ef585a4c263884833738bb369fa7d59b586c3aaaa26c663",
+    "firstName": "Dia",
+    "lastName": "Swami",
+    "created_at": "2025-11-05T14:06:25.601143",
+    "last_login": "2025-11-05T14:06:25.601143",
+    "token": "6f26f36b787645f083704fdc470117f9",
+    "is_active": true
+  }
+]

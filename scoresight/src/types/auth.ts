@@ -3,14 +3,8 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-}
-
-export interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
+  token: string;
+  created_at?: string;
 }
 
 export interface LoginFormData {
@@ -24,4 +18,15 @@ export interface SignupFormData {
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  loading: boolean;
+  authMessage: string;
+  clearMessage: () => void;
 }

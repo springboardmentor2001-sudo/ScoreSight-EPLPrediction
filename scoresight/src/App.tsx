@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import Layout from './components/common/Layout';
 import Dashboard from './pages/Dashboard';
 import PreMatchPrediction from './pages/PreMatchPrediction';
@@ -82,19 +83,73 @@ const darkTheme = createTheme({
   },
 });
 
+// Loading component for initial auth check
+const LoadingScreen: React.FC = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      background: 'linear-gradient(135deg, #0a1929 0%, #102a43 100%)',
+      flexDirection: 'column',
+      gap: 3,
+    }}
+  >
+    <CircularProgress 
+      size={60} 
+      sx={{ 
+        color: '#00d4ff',
+        '& .MuiCircularProgress-circle': {
+          strokeLinecap: 'round',
+        }
+      }} 
+    />
+    <Typography
+      variant="h5"
+      sx={{
+        background: 'linear-gradient(45deg, #00d4ff, #ff6bff)',
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        fontWeight: 600,
+      }}
+    >
+      Loading Scoresight...
+    </Typography>
+  </Box>
+);
+
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  
   return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
 };
 
 // Public Route component (redirect to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  
   return !isAuthenticated ? <>{children}</> : <Navigate to="/" />;
 };
 
 function AppContent() {
+  const { loading } = useAuth();
+
+  // Show loading screen during initial auth check
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Router>
       <Routes>
