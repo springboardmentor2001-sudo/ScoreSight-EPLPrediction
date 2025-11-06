@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Football Scores</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Poppins", sans-serif;
+            background: linear-gradient(135deg, #001f3f, #004080);
+            color: #fff;
+            min-height: 100vh;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 50px;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header h1 { font-size: 26px; color: #fff; }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 25px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        nav a:hover {
+            color: #00bfff;
+            text-shadow: 0 0 10px #00bfff;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 50px auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            color: #00bfff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .matches {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .match-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+        .match-card:hover {
+            transform: translateY(-5px);
+        }
+        .league {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .league img {
+            width: 26px;
+            height: 26px;
+        }
+        .teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .team {
+            text-align: center;
+            width: 45%;
+        }
+        .team img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        .score {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #facc15;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            color: #ccc;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>EPL Match Predictor</h1>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('predict') }}">Predict</a>
+        <a href="{{ url_for('stats') }}">Stats</a>
+        <a href="{{ url_for('chatbot') }}">AI Chat</a>
+        <a href="{{ url_for('live') }}">Live</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+    <h2>⚽ Live Football Matches</h2>
+    {% if matches %}
+    <div class="matches">
+        {% for m in matches %}
+        <div class="match-card">
+            <div class="league">
+                <img src="{{ m.league_logo }}" alt="">
+                <span>{{ m.league_name }} ({{ m.country }})</span>
+            </div>
+            <div class="teams">
+                <div class="team">
+                    <img src="{{ m.home_logo }}" alt="">
+                    <div>{{ m.home_team }}</div>
+                </div>
+                <div class="score">{{ m.home_goals }} - {{ m.away_goals }}</div>
+                <div class="team">
+                    <img src="{{ m.away_logo }}" alt="">
+                    <div>{{ m.away_team }}</div>
+                </div>
+            </div>
+            <div class="status">
+                {{ m.status }} — {{ m.elapsed }}'
+                <br>
+                <small>Venue: {{ m.venue }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align:center; color:#ccc; margin-top:30px;">No live matches at the moment.</p>
+    {% endif %}
+</div>
+
+<footer>
+    © 2025 Live Football Scores — Powered by API Sports
+</footer>
+
+</body>
+</html>

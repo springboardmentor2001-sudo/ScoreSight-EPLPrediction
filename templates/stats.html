@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EPL Match Stats</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Poppins", sans-serif;
+            background: linear-gradient(135deg, #001f3f, #004080);
+            color: #fff;
+            min-height: 100vh;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 50px;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+       header h1 { font-size: 26px; color: #fff; 
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 25px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        nav a:hover {
+            color: #00bfff;
+            text-shadow: 0 0 10px #00bfff;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 50px auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            color: #00bfff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* League Overview */
+        .overview {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            flex: 1 1 calc(33.3% - 15px);
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 250px;
+        }
+        .stat-card strong {
+            color: #00bfff;
+            display: block;
+            margin-bottom: 6px;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        select, button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 15px;
+        }
+        select {
+            color: #333;
+            background: #f0f0f0;
+        }
+        button {
+            background: linear-gradient(90deg, #00bfff, #0077a3);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(90deg, #0077a3, #005c80);
+        }
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background: rgba(0, 153, 204, 0.7);
+        }
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.05);
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            color: #ccc;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>EPL Match Predictor</h1>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('predict') }}">Predict</a>
+            <a href="{{ url_for('stats') }}">Stats</a>
+            <a href="{{ url_for('chatbot') }}">AI Chat</a>
+            <a href="{{ url_for('live') }}">Live</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>League Overview</h2>
+
+        <div class="overview">
+            <div class="stat-card">
+                <strong>Number of Seasons</strong>
+                <p>{{ real_stats.num_seasons }}</p>
+            </div>
+            <div class="stat-card">
+                <strong>Teams Participated</strong>
+                <p>{{ real_stats.num_teams }}</p>
+            </div>
+            <div class="stat-card">
+                <strong>Most Championships</strong>
+                <p>{{ real_stats.most_champions }}</p>
+            </div>
+            <div class="stat-card">
+                <strong>Current Champion</strong>
+                <p>{{ real_stats.current_champion }}</p>
+            </div>
+            <div class="stat-card">
+                <strong>Most Goals by a Team</strong>
+                <p>{{ real_stats.most_goals_team }}</p>
+            </div>
+            <div class="stat-card">
+                <strong>Top Scorer (Season)</strong>
+                <p>{{ real_stats.top_scorer }}</p>
+            </div>
+        </div>
+
+        <form method="POST">
+            <select name="home_team" required>
+                <option value="">Select Home Team</option>
+                {% for team in teams %}
+                <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="away_team" required>
+                <option value="">Select Away Team</option>
+                {% for team in teams %}
+                <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Show Matches</button>
+        </form>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% elif matches is defined and matches is not none and not matches.empty %}
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Season</th>
+                <th>Home Team</th>
+                <th>Away Team</th>
+                <th>HT Home Goals</th>
+                <th>HT Away Goals</th>
+                <th>FT Home Goals</th>
+                <th>FT Away Goals</th>
+                <th>Result</th>
+            </tr>
+            {% for _, row in matches.iterrows() %}
+            <tr>
+                <td>{{ row.Date }}</td>
+                <td>{{ row.Season if 'Season' in row else 'N/A' }}</td>
+                <td>{{ row.HomeTeam }}</td>
+                <td>{{ row.AwayTeam }}</td>
+                <td>{{ row.HTHG if 'HTHG' in row else '-' }}</td>
+                <td>{{ row.HTAG if 'HTAG' in row else '-' }}</td>
+                <td>{{ row.FTHG }}</td>
+                <td>{{ row.FTAG }}</td>
+                <td>{{ row.FTR }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+
+    <footer>
+        © 2025 EPL Stats Portal 
+    </footer>
+
+</body>
+</html>

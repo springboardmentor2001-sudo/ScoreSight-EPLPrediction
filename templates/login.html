@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login - EPL Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(135deg, #00264d, #004080);
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    background: rgba(255,255,255,0.1);
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+header h1 { color: #fff; margin: 0; font-size: 22px; }
+nav a {
+    color: #fff;
+    margin-left: 25px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s;
+}
+nav a:hover { color: #00bfff; }
+
+/* Main Container */
+.container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.box {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding: 35px;
+    border-radius: 20px;
+    width: 400px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    text-align: center;
+}
+h2 {
+    margin-bottom: 25px;
+    color: #fff;
+}
+label {
+    display: block;
+    text-align: left;
+    margin: 10px 0 5px;
+    color: #ddd;
+}
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+}
+
+/* Password Eye Icon */
+.password-container {
+    position: relative;
+}
+.password-container input {
+    width: 100%;
+    padding-right: 9px;
+}
+.eye-icon {
+    position: absolute;
+    right: 10px;
+    top: 40%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #706a6aff;
+}
+
+button {
+    width: 104%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    background-color: #00bfff;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+}
+button:hover { background-color: #0099cc; }
+.register-link {
+    margin-top: 15px;
+    font-size: 14px;
+}
+.register-link a { color: #00bfff; text-decoration: none; }
+.register-link a:hover { text-decoration: underline; }
+
+/* Error Message */
+.flash {
+    background: rgba(255, 50, 50, 0.2);
+    color: #ff4c4c;
+    border: 1px solid #ff4c4c;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+/* Footer */
+footer {
+    background: rgba(255,255,255,0.1);
+    text-align: center;
+    padding: 10px 0;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    color: #ddd;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>EPL Match Predictor</h1>
+</header>
+
+<div class="container">
+    <div class="box">
+        <h2>Login to Your Account</h2>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('login') }}" method="POST">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="Enter your email" required>
+
+            <label>Password</label>
+            <div class="password-container">
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                <span class="eye-icon" onclick="togglePasswordVisibility('password', this)">
+                    <i class="fas fa-eye"></i>
+                </span>
+            </div>
+
+            <button type="submit">Login</button>
+        </form>
+        <div class="register-link">
+            Don’t have an account? <a href="{{ url_for('register') }}">Register here</a>
+        </div>
+    </div>
+</div>
+
+<footer>
+    &copy; 2025 EPL Match Predictor | All Rights Reserved
+</footer>
+
+<script>
+function togglePasswordVisibility(inputId, icon) {
+    let passwordField = document.getElementById(inputId);
+    let eyeIcon = icon.querySelector("i");
+
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        eyeIcon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+        passwordField.type = "password";
+        eyeIcon.classList.replace("fa-eye-slash", "fa-eye");
+    }
+}
+</script>
+
+</body>
+</html>

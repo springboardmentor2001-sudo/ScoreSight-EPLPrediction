@@ -1,0 +1,218 @@
+{
+    "Arsenal": {
+        "ShotAccuracy": 0.4512872442396734,
+        "AvgGoals": 1.6014084507042254,
+        "AvgConcede": 1.246713615023474,
+        "WinRate": 0.4549295774647888
+    },
+    "Aston Villa": {
+        "ShotAccuracy": 0.39575445866617653,
+        "AvgGoals": 1.222051282051282,
+        "AvgConcede": 1.4776923076923076,
+        "WinRate": 0.32282051282051283
+    },
+    "Birmingham": {
+        "ShotAccuracy": 0.4571129936543167,
+        "AvgGoals": 1.1708333333333334,
+        "AvgConcede": 1.48125,
+        "WinRate": 0.29583333333333334
+    },
+    "Blackburn": {
+        "ShotAccuracy": 0.4957527841329377,
+        "AvgGoals": 1.3796610169491526,
+        "AvgConcede": 1.6067796610169491,
+        "WinRate": 0.3186440677966102
+    },
+    "Blackpool": {
+        "ShotAccuracy": 0.5416686797272817,
+        "AvgGoals": 1.2666666666666666,
+        "AvgConcede": 1.7866666666666666,
+        "WinRate": 0.26999999999999996
+    },
+    "Bolton": {
+        "ShotAccuracy": 0.6346615271149174,
+        "AvgGoals": 1.3798387096774194,
+        "AvgConcede": 1.6451612903225807,
+        "WinRate": 0.3209677419354839
+    },
+    "Bournemouth": {
+        "ShotAccuracy": 0.32269001327665336,
+        "AvgGoals": 1.3310023310023311,
+        "AvgConcede": 1.5193473193473195,
+        "WinRate": 0.351981351981352
+    },
+    "Brighton": {
+        "ShotAccuracy": 0.3041827400752473,
+        "AvgGoals": 1.179746835443038,
+        "AvgConcede": 1.3915611814345992,
+        "WinRate": 0.3265822784810127
+    },
+    "Burnley": {
+        "ShotAccuracy": 0.3383276318320491,
+        "AvgGoals": 1.1728187919463087,
+        "AvgConcede": 1.404026845637584,
+        "WinRate": 0.33557046979865773
+    },
+    "Cardiff": {
+        "ShotAccuracy": 0.3048976563789057,
+        "AvgGoals": 1.1229508196721312,
+        "AvgConcede": 1.610655737704918,
+        "WinRate": 0.3040983606557377
+    },
+    "Chelsea": {
+        "ShotAccuracy": 0.4240215862174843,
+        "AvgGoals": 1.6307829181494662,
+        "AvgConcede": 1.1653024911032028,
+        "WinRate": 0.4776986951364176
+    },
+    "Crystal Palace": {
+        "ShotAccuracy": 0.3269105491247353,
+        "AvgGoals": 1.2681444991789819,
+        "AvgConcede": 1.349425287356322,
+        "WinRate": 0.35591133004926107
+    },
+    "Everton": {
+        "ShotAccuracy": 0.4166041033633007,
+        "AvgGoals": 1.3979933110367893,
+        "AvgConcede": 1.3296544035674471,
+        "WinRate": 0.3881828316610925
+    },
+    "Fulham": {
+        "ShotAccuracy": 0.48627857839580324,
+        "AvgGoals": 1.2324561403508774,
+        "AvgConcede": 1.5192982456140351,
+        "WinRate": 0.30526315789473685
+    },
+    "Huddersfield": {
+        "ShotAccuracy": 0.2656983852198837,
+        "AvgGoals": 1.087719298245614,
+        "AvgConcede": 1.6017543859649122,
+        "WinRate": 0.28245614035087724
+    },
+    "Hull": {
+        "ShotAccuracy": 0.3233522079549266,
+        "AvgGoals": 1.1717391304347826,
+        "AvgConcede": 1.5297101449275363,
+        "WinRate": 0.30144927536231886
+    },
+    "Leicester City": {
+        "ShotAccuracy": 0.3254035392593994,
+        "AvgGoals": 1.4155688622754492,
+        "AvgConcede": 1.3511976047904193,
+        "WinRate": 0.3991017964071857
+    },
+    "Liverpool": {
+        "ShotAccuracy": 0.41109595504542396,
+        "AvgGoals": 1.6391891891891892,
+        "AvgConcede": 1.2608108108108107,
+        "WinRate": 0.4564189189189189
+    },
+    "Manchester City": {
+        "ShotAccuracy": 0.4280074885820216,
+        "AvgGoals": 1.8340159271899887,
+        "AvgConcede": 1.1285551763367463,
+        "WinRate": 0.5232081911262799
+    },
+    "Manchester United": {
+        "ShotAccuracy": 0.43640065159296676,
+        "AvgGoals": 1.588849765258216,
+        "AvgConcede": 1.1715962441314554,
+        "WinRate": 0.4805751173708921
+    },
+    "Middlesbrough": {
+        "ShotAccuracy": 0.2945494155352246,
+        "AvgGoals": 1.0733333333333335,
+        "AvgConcede": 1.422222222222222,
+        "WinRate": 0.24444444444444446
+    },
+    "Newcastle": {
+        "ShotAccuracy": 0.4020774559954558,
+        "AvgGoals": 1.2769934640522875,
+        "AvgConcede": 1.4566666666666666,
+        "WinRate": 0.35026143790849673
+    },
+    "Norwich": {
+        "ShotAccuracy": 0.42326084173926626,
+        "AvgGoals": 1.2155844155844155,
+        "AvgConcede": 1.5718614718614718,
+        "WinRate": 0.29090909090909095
+    },
+    "QPR": {
+        "ShotAccuracy": 0.4314868663048479,
+        "AvgGoals": 1.1446969696969698,
+        "AvgConcede": 1.5795454545454546,
+        "WinRate": 0.271969696969697
+    },
+    "Reading": {
+        "ShotAccuracy": 0.5561118351611751,
+        "AvgGoals": 1.2633333333333332,
+        "AvgConcede": 1.6583333333333334,
+        "WinRate": 0.23333333333333334
+    },
+    "Sheffield United": {
+        "ShotAccuracy": 0.34599784640697556,
+        "AvgGoals": 1.44,
+        "AvgConcede": 1.1099999999999999,
+        "WinRate": 0.37
+    },
+    "Southampton": {
+        "ShotAccuracy": 0.36809731153853387,
+        "AvgGoals": 1.3475,
+        "AvgConcede": 1.3618181818181818,
+        "WinRate": 0.35818181818181816
+    },
+    "Stoke": {
+        "ShotAccuracy": 0.38851387943792737,
+        "AvgGoals": 1.204323570432357,
+        "AvgConcede": 1.3726638772663877,
+        "WinRate": 0.3316596931659693
+    },
+    "Sunderland": {
+        "ShotAccuracy": 0.40676252214494835,
+        "AvgGoals": 1.1983412322274882,
+        "AvgConcede": 1.4172985781990521,
+        "WinRate": 0.29739336492890994
+    },
+    "Swansea": {
+        "ShotAccuracy": 0.4139450935738069,
+        "AvgGoals": 1.2741784037558683,
+        "AvgConcede": 1.4272300469483568,
+        "WinRate": 0.34460093896713617
+    },
+    "Tottenham": {
+        "ShotAccuracy": 0.4361622810401185,
+        "AvgGoals": 1.5275862068965518,
+        "AvgConcede": 1.2537931034482759,
+        "WinRate": 0.45482758620689656
+    },
+    "Watford": {
+        "ShotAccuracy": 0.32002251181340813,
+        "AvgGoals": 1.2212121212121212,
+        "AvgConcede": 1.5257575757575759,
+        "WinRate": 0.33636363636363636
+    },
+    "West Brom": {
+        "ShotAccuracy": 0.41186406132740844,
+        "AvgGoals": 1.2553695955369597,
+        "AvgConcede": 1.451534170153417,
+        "WinRate": 0.3308228730822873
+    },
+    "West Ham": {
+        "ShotAccuracy": 0.3723596568241588,
+        "AvgGoals": 1.296875,
+        "AvgConcede": 1.4015625,
+        "WinRate": 0.34401041666666665
+    },
+    "Wigan": {
+        "ShotAccuracy": 0.5631901667215649,
+        "AvgGoals": 1.323921568627451,
+        "AvgConcede": 1.5433333333333334,
+        "WinRate": 0.3396078431372549
+    },
+    "Wolves": {
+        "ShotAccuracy": 0.44083388565180065,
+        "AvgGoals": 1.3079439252336447,
+        "AvgConcede": 1.5289719626168223,
+        "WinRate": 0.33504672897196264
+    }
+}
