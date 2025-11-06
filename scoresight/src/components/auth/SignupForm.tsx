@@ -290,14 +290,14 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
             mt: 3,
             mb: 2,
             py: 1.5,
-            background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+            background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
             fontWeight: '600',
             fontSize: '1rem',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(135deg, #00cc6a 0%, #00aa55 100%)',
+              background: 'linear-gradient(135deg, #1976D2 0%, #1565C0 100%)',
               transform: 'translateY(-2px)',
-              boxShadow: '0 6px 20px rgba(0, 255, 136, 0.4)',
+              boxShadow: '0 6px 20px rgba(33, 150, 243, 0.4)',
             },
             '&:disabled': {
               background: '#424242',

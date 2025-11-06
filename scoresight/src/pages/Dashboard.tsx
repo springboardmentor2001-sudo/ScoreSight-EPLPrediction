@@ -9,39 +9,22 @@ import {
   Avatar,
   LinearProgress,
   Skeleton,
-  Paper,
   IconButton,
-  Tooltip,
-  Zoom,
-  Fade,
-  useTheme,
-  useMediaQuery
+  Tooltip
 } from '@mui/material';
-import './Dashboard.css';
 import { 
   TrendingUp, 
   Schedule, 
-  Notifications, 
   Insights,
   Groups,
   EmojiEvents,
   LiveTv,
-  Chat,
-  InfoOutlined,
-  SportsSoccer,
-  Timeline,
-  Assessment,
-  BarChart,
-  Stars,
+  Calculate,
   Refresh
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import liveDataService from '../services/liveDataService';
-import { footballAPI } from '../services/footballApi';
-import { Calculate } from '@mui/icons-material';
-// Remove the image imports and use team data from your API instead
 
-// Add these interfaces for our data
 interface Team {
   id: number;
   name: string;
@@ -73,7 +56,6 @@ interface Prediction {
 }
 
 const Dashboard: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -89,25 +71,21 @@ const Dashboard: React.FC = () => {
     setLoading(true);
     try {
       const fixtures = await liveDataService.getFixtures();
-      console.log('Fixtures from API:', fixtures);
-      
-      // Show first 4 matches regardless of date for testing
       const upcomingMatches = fixtures.slice(0, 4);
       setLiveMatches(upcomingMatches);
 
-      // Generate mock predictions based on real fixtures
       const mockPredictions = upcomingMatches.map((match: LiveMatch, index: number) => ({
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
-        homeWinProbability: 0.4 + (index * 0.1), // Varying probabilities
+        homeWinProbability: 0.4 + (index * 0.1),
         drawProbability: 0.25,
         awayWinProbability: 0.35 - (index * 0.1),
         confidence: index === 0 ? 'high' : index === 1 ? 'medium' : 'low' as const,
         predictedScore: index === 0 ? '2-1' : index === 1 ? '1-1' : '0-2',
         keyFactors: [
-          'Home advantage significant',
-          'Recent form analysis',
-          'Head-to-head record favorable'
+          'Team form analysis',
+          'Head-to-head record',
+          'Home advantage'
         ],
         betRecommendation: index === 0 ? 'HOME WIN' : undefined
       }));
@@ -115,7 +93,6 @@ const Dashboard: React.FC = () => {
       setPredictions(mockPredictions);
     } catch (error) {
       console.error('Error fetching live data:', error);
-      // Create fallback empty state instead of using mock data
       setLiveMatches([]);
       setPredictions([]);
     } finally {
@@ -142,79 +119,38 @@ const Dashboard: React.FC = () => {
     return '#f44336';
   };
 
-
-  const StatsOverview: React.FC = () => {
-    const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const [animateStats, setAnimateStats] = useState(false);
-
-    useEffect(() => {
-      setAnimateStats(true);
-    }, []);
-
-    return (
+  const StatsOverview: React.FC = () => (
     <Box sx={{ 
       display: 'grid', 
       gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, 
       gap: 3, 
       mb: 4 
     }}>
-      {/* Stats cards */}
-      <Card sx={{ 
-        height: '100%', 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
+      <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         <CardContent>
           <TrendingUp sx={{ mb: 1, fontSize: 40, opacity: 0.8 }} />
-          <Typography variant="h4" component="div" fontWeight="700" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-            75.7%
+          <Typography variant="h4" component="div" fontWeight="700">
+            AI Powered
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Pre-Match Accuracy
+            Smart Predictions
           </Typography>
-          <Chip 
-            label="PROVEN" 
-            size="small" 
-            sx={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              color: 'white', 
-              mt: 1,
-              fontWeight: '600'
-            }} 
-          />
         </CardContent>
       </Card>
 
-      <Card sx={{ 
-        height: '100%', 
-        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        color: 'white'
-      }}>
+      <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
         <CardContent>
           <Insights sx={{ mb: 1, fontSize: 40, opacity: 0.8 }} />
           <Typography variant="h4" component="div" fontWeight="700">
-            68.1%
+            Live Analysis
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Half-Time Accuracy
+            Real-time Updates
           </Typography>
-          <Chip 
-            label="LIVE" 
-            size="small" 
-            sx={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              color: 'white', 
-              mt: 1,
-              fontWeight: '600'
-            }} 
-          />
         </CardContent>
       </Card>
 
-      <Card sx={{ height: '100%', position: 'relative' }}>
+      <Card sx={{ height: '100%' }}>
         <CardContent>
           <Schedule sx={{ mb: 1, fontSize: 40, color: 'primary.main' }} />
           <Typography variant="h4" component="div" fontWeight="700" color="primary">
@@ -223,12 +159,6 @@ const Dashboard: React.FC = () => {
           <Typography color="text.secondary">
             Matches Today
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-            <LiveTv sx={{ fontSize: 16, mr: 0.5, color: 'error.main' }} />
-            <Typography variant="caption" color="error.main" fontWeight="600">
-              {liveMatches.filter(m => m.status === 'LIVE').length} LIVE NOW
-            </Typography>
-          </Box>
         </CardContent>
       </Card>
 
@@ -245,10 +175,8 @@ const Dashboard: React.FC = () => {
       </Card>
     </Box>
   );
-  };
 
   const MatchCard: React.FC<{ match: LiveMatch; prediction?: Prediction }> = ({ match, prediction }) => {
-    // Use the provided prediction or create a basic fallback
     const currentPrediction = prediction || {
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
@@ -257,25 +185,11 @@ const Dashboard: React.FC = () => {
       awayWinProbability: 0.25,
       confidence: 'medium' as const,
       predictedScore: '1-1',
-      keyFactors: ['Data analysis in progress'],
+      keyFactors: ['Analysis in progress'],
       betRecommendation: undefined
     };
 
     return (
-      <Tooltip
-        title={
-          <Box sx={{ p: 1 }}>
-            <Typography variant="subtitle2">Predicted: {currentPrediction.predictedScore}</Typography>
-            <Typography variant="caption">H: {(currentPrediction.homeWinProbability * 100).toFixed(1)}% • D: {(currentPrediction.drawProbability * 100).toFixed(1)}% • A: {(currentPrediction.awayWinProbability * 100).toFixed(1)}%</Typography>
-            <Typography variant="caption" display="block">Confidence: {currentPrediction.confidence}</Typography>
-            <Typography variant="caption" display="block">{new Date(match.date).toLocaleString()}</Typography>
-          </Box>
-        }
-        placement="top"
-        arrow
-        enterDelay={150}
-        leaveDelay={100}
-      >
       <Card sx={{ 
         height: '100%',
         transition: 'all 0.3s ease-in-out',
@@ -289,15 +203,15 @@ const Dashboard: React.FC = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box>
               <Typography variant="h6" component="div" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar src={match.homeTeam.crest || undefined} alt={match.homeTeam.shortName} sx={{ width: 28, height: 28 }}>
-                    {!match.homeTeam.crest && match.homeTeam.shortName?.charAt(0)}
-                  </Avatar>
-                  {match.homeTeam.shortName} vs 
-                  <Avatar src={match.awayTeam.crest || undefined} alt={match.awayTeam.shortName} sx={{ width: 28, height: 28 }}>
-                    {!match.awayTeam.crest && match.awayTeam.shortName?.charAt(0)}
-                  </Avatar>
-                  {match.awayTeam.shortName}
-                </Typography>
+                <Avatar src={match.homeTeam.crest || undefined} alt={match.homeTeam.shortName} sx={{ width: 28, height: 28 }}>
+                  {!match.homeTeam.crest && match.homeTeam.shortName?.charAt(0)}
+                </Avatar>
+                {match.homeTeam.shortName} vs 
+                <Avatar src={match.awayTeam.crest || undefined} alt={match.awayTeam.shortName} sx={{ width: 28, height: 28 }}>
+                  {!match.awayTeam.crest && match.awayTeam.shortName?.charAt(0)}
+                </Avatar>
+                {match.awayTeam.shortName}
+              </Typography>
               <Typography color="text.secondary" variant="caption">
                 {new Date(match.date).toLocaleDateString('en-US', { 
                   weekday: 'short', 
@@ -305,7 +219,7 @@ const Dashboard: React.FC = () => {
                   day: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
-                })} • {match.venue || 'Premier League'}
+                })}
               </Typography>
             </Box>
             <Chip 
@@ -315,7 +229,6 @@ const Dashboard: React.FC = () => {
             />
           </Box>
 
-          {/* Probability Visualization */}
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -325,7 +238,7 @@ const Dashboard: React.FC = () => {
                 <Typography variant="body2" fontWeight="600">{match.homeTeam.shortName}</Typography>
               </Box>
               <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.homeWinProbability)}>
-                {(currentPrediction.homeWinProbability * 100).toFixed(1)}%
+                {(currentPrediction.homeWinProbability * 100).toFixed(0)}%
               </Typography>
             </Box>
             <LinearProgress 
@@ -345,7 +258,7 @@ const Dashboard: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" fontWeight="600">Draw</Typography>
               <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.drawProbability)}>
-                {(currentPrediction.drawProbability * 100).toFixed(1)}%
+                {(currentPrediction.drawProbability * 100).toFixed(0)}%
               </Typography>
             </Box>
             <LinearProgress 
@@ -370,7 +283,7 @@ const Dashboard: React.FC = () => {
                 <Typography variant="body2" fontWeight="600">{match.awayTeam.shortName}</Typography>
               </Box>
               <Typography variant="body2" fontWeight="600" color={getWinProbabilityColor(currentPrediction.awayWinProbability)}>
-                {(currentPrediction.awayWinProbability * 100).toFixed(1)}%
+                {(currentPrediction.awayWinProbability * 100).toFixed(0)}%
               </Typography>
             </Box>
             <LinearProgress 
@@ -387,47 +300,43 @@ const Dashboard: React.FC = () => {
             />
           </Box>
 
-          {/* Key Insights */}
           <Box sx={{ 
             background: 'linear-gradient(135deg, #103163ff 0%, #0e2956ff 100%)', 
             p: 2, 
             borderRadius: 2,
-            border: '1px solid #e0e0e0'
+            color: 'white'
           }}>
             <Typography variant="subtitle2" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
               <Insights sx={{ mr: 1, fontSize: 18 }} />
-              AI KEY INSIGHTS
+              KEY INSIGHTS
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               {currentPrediction.keyFactors.map((factor: string, index: number) => (
-                <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5 }}>
+                <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5, opacity: 0.9 }}>
                   {factor}
                 </Typography>
               ))}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Predicted Score: <strong>{currentPrediction.predictedScore}</strong>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                Predicted: <strong>{currentPrediction.predictedScore}</strong>
               </Typography>
               {currentPrediction.betRecommendation && (
                 <Chip 
                   label={currentPrediction.betRecommendation} 
                   size="small" 
-                  color="success"
-                  variant="outlined"
+                  sx={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
                 />
               )}
             </Box>
           </Box>
         </CardContent>
       </Card>
-      </Tooltip>
     );
   };
 
   return (
-    <Box>
-      {/* Header Section */}
+    <Box sx={{ p: 3 }}>
       <Box sx={{ 
         mb: 4, 
         display: 'flex', 
@@ -448,55 +357,41 @@ const Dashboard: React.FC = () => {
               day: 'numeric' 
             })}
           </Typography>
-          <Typography variant="body1" sx={{ maxWidth: 600 }}>
-            Advanced machine learning predictions with <strong>75.7% accuracy</strong>. 
-            Powered by ensemble models trained on 10 seasons of Premier League data.
+          <Typography variant="body1" sx={{ maxWidth: 600, opacity: 0.8 }}>
+            Advanced machine learning predictions powered by ensemble models trained on Premier League data.
           </Typography>
         </Box>
         
-<Button 
-  variant="contained" 
-  size="large"
-  onClick={() => navigate('/prediction')}
-  startIcon={<Calculate />}
-  sx={{ 
-    background: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
-    fontWeight: '600'
-  }}
->
-  Match Predictor
-</Button>
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
           <Button 
             variant="contained" 
             size="large"
-            onClick={() => navigate('/predictions/pre-match')}
-            startIcon={<Insights />}
+            onClick={() => navigate('/prediction')}
+            startIcon={<Calculate />}
             sx={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
               fontWeight: '600'
             }}
           >
-            AI Predictions
+            Match Predictor
           </Button>
           <Button 
             variant="outlined" 
             size="large"
-            startIcon={<LiveTv />}
+            onClick={() => navigate('/predictions/pre-match')}
+            startIcon={<Insights />}
           >
-            Live Matches
+            AI Predictions
           </Button>
         </Box>
       </Box>
 
-      {/* Stats Overview */}
       <StatsOverview />
 
-      {/* Upcoming Matches Section */}
       <Box>
         <Typography variant="h5" fontWeight="700" gutterBottom sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-          <EmojiEvents sx={{ mr: 1, color: 'gold' }} />
-          UPCOMING PREMIER LEAGUE MATCHES
+          <EmojiEvents sx={{ mr: 1, color: 'primary.main' }} />
+          UPCOMING MATCHES
         </Typography>
 
         {loading ? (
