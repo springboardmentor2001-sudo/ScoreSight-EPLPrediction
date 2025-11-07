@@ -24,7 +24,9 @@ const AIPredictor = () => {
 
   const testConnection = async () => {
     try {
-      const response = await fetch(`${API_URL}/test`);
+      const response = await fetch(`${API_URL}/test`, {
+        credentials: 'include' // Add this for session cookies
+      });
       if (response.ok) {
         const data = await response.json();
         console.log('Server connection successful:', data);
@@ -65,6 +67,7 @@ const AIPredictor = () => {
         headers: { 
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // CRITICAL: This sends session cookies
         body: JSON.stringify({
           HomeTeam: formData.homeTeam,
           AwayTeam: formData.awayTeam,
@@ -82,6 +85,14 @@ const AIPredictor = () => {
         } catch (e) {
           errorMessage = response.statusText || errorMessage;
         }
+        
+        // Handle authentication error specifically
+        if (response.status === 401) {
+          errorMessage = 'Please login first to use the AI Predictor';
+          // You could redirect to login page here
+          // window.location.href = '/?login=true';
+        }
+        
         throw new Error(errorMessage);
       }
 
@@ -115,6 +126,13 @@ const AIPredictor = () => {
           <h1 className="text-4xl font-bold text-cyan-400 mb-2">EPL Match Predictor</h1>
           <p className="text-slate-300">AI-Powered Match Outcome Prediction</p>
           
+          {/* Test Connection Button */}
+          <button
+            onClick={testConnection}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          >
+            Test Server Connection
+          </button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -196,7 +214,11 @@ const AIPredictor = () => {
                     <p className="text-red-300 text-sm font-medium">Error</p>
                     <p className="text-red-300 text-sm">{error}</p>
                     <p className="text-red-300 text-xs mt-1">
-                      Make sure your Flask server is running: <code>python app.py</code>
+                      {error.includes('login') ? (
+                        'Please go back to the home page and login first.'
+                      ) : (
+                        'Make sure your Flask server is running: python app.py'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -309,7 +331,7 @@ const AIPredictor = () => {
                 </svg>
                 <p className="text-lg font-medium">No prediction yet</p>
                 <p className="text-sm mt-2 text-center">Select teams and click predict to see results</p>
-                <p className="text-xs mt-1 text-slate-600 text-center">Make sure Flask server is running on port 5000</p>
+                <p className="text-xs mt-1 text-slate-600 text-center">Make sure you are logged in and Flask server is running</p>
               </div>
             )}
           </div>

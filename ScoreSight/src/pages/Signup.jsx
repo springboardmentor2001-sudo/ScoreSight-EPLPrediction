@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, UserPlus, Trophy } from 'lucide-react';
 
-const Signup = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
+const Signup = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -44,6 +44,7 @@ const Signup = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for sessions
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
@@ -53,8 +54,8 @@ const Signup = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
 
       const data = await response.json();
 
-      if (response.ok) {
-        onLogin(data.user, data.access_token); // This will handle the navigation
+      if (data.success) {
+        onLogin(data.user, data.access_token);
       } else {
         setError(data.error || 'Registration failed');
       }
@@ -189,7 +190,7 @@ const Signup = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => window.location.reload()} // Simple reload to show login
+                  onClick={() => window.location.href = '/?login=true'}
                   className="text-green-400 hover:text-green-300 font-medium"
                 >
                   Sign in here

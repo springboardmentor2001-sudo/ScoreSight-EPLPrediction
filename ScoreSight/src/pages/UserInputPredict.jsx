@@ -38,11 +38,11 @@ const UserInputPredict = () => {
   const [error, setError] = useState('');
 
   const teams = [
-  'Arsenal', 'Aston Villa', 'Bournemouth', 'Brighton', 'Burnley',
-  'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leicester',
-  'Liverpool', 'Man City', 'Man United', 'Newcastle', 'Norwich',
-  'Southampton', 'Tottenham', 'Watford', 'West Ham', 'Wolves'
-];
+    'Arsenal', 'Aston Villa', 'Bournemouth', 'Brighton', 'Burnley',
+    'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leicester',
+    'Liverpool', 'Man City', 'Man United', 'Newcastle', 'Norwich',
+    'Southampton', 'Tottenham', 'Watford', 'West Ham', 'Wolves'
+  ];
 
   const handleChange = (e) => {
     setMatchData({ ...matchData, [e.target.name]: e.target.value });
@@ -61,24 +61,46 @@ const UserInputPredict = () => {
         throw new Error('Home and Away teams must be different');
       }
 
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/predict', {
+      // Use the correct endpoint and include credentials
+      const response = await fetch('http://localhost:5000/predict-ai-fixed', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(matchData)
+        credentials: 'include', // Important for session cookies
+        body: JSON.stringify({
+          HomeTeam: matchData.HomeTeam,
+          AwayTeam: matchData.AwayTeam,
+          Date: matchData.Date || new Date().toISOString().split('T')[0]
+        })
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Prediction failed. Please check your input and try again.');
+        let errorMessage = 'Prediction failed. Please check your input and try again.';
+        
+        if (response.status === 401) {
+          errorMessage = 'Please login first to use the prediction feature.';
+        } else {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // If we can't parse JSON error, use status text
+            errorMessage = response.statusText || errorMessage;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
+      console.log('Prediction result:', result);
       setPredictions(result);
       
     } catch (err) {
+      console.error('Prediction error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -96,7 +118,7 @@ const UserInputPredict = () => {
           <p className="text-blue-200 text-lg">Input match statistics for accurate predictions</p>
         </div>
 
-        {/* Match Details Form - Complete with all 19 inputs */}
+        {/* Match Details Form */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/20 mb-6 w-full">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
             <Calendar className="text-blue-400" size={28} />
@@ -152,6 +174,14 @@ const UserInputPredict = () => {
                   </select>
                 </div>
               </div>
+            </div>
+
+            {/* Note about simplified prediction */}
+            <div className="bg-yellow-500/20 p-4 rounded-lg border border-yellow-400/30">
+              <p className="text-yellow-200 text-sm text-center">
+                <strong>Note:</strong> This prediction uses team form and historical data analysis. 
+                The detailed statistics inputs below are for display purposes only.
+              </p>
             </div>
 
             {/* Half-Time Statistics */}
@@ -413,7 +443,12 @@ const UserInputPredict = () => {
         {error && (
           <div className="bg-red-500/20 border-2 border-red-500 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-pulse w-full">
             <AlertCircle className="text-red-300" size={24} />
-            <p className="text-red-200 font-medium">{error}</p>
+            <div>
+              <p className="text-red-200 font-medium">{error}</p>
+              {error.includes('login') && (
+                <p className="text-red-300 text-sm mt-1">Please make sure you are logged in.</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -448,9 +483,29 @@ const UserInputPredict = () => {
               </div>
             </div>
 
+            {/* Score Prediction */}
+            <div className="mt-6 text-center bg-indigo-500/20 rounded-xl p-6 border border-indigo-400/30">
+              <p className="text-blue-200 text-lg mb-2">Predicted Score</p>
+              <p className="text-5xl font-bold text-white">
+                {predictions.homeGoals} - {predictions.awayGoals}
+              </p>
+            </div>
+
             {predictions.confidence && (
-              <div className="mt-6 text-center bg-indigo-500/20 rounded-xl p-4 border border-indigo-400/30">
+              <div className="mt-6 text-center bg-green-500/20 rounded-xl p-4 border border-green-400/30">
                 <p className="text-blue-200">Model Confidence: <span className="text-white font-bold text-2xl">{predictions.confidence}%</span></p>
+              </div>
+            )}
+
+            {predictions.insights && (
+              <div className="mt-6 bg-slate-700/30 rounded-xl p-6 border border-slate-600/30">
+                <h3 className="text-white font-bold text-xl mb-4">Match Insights</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="text-cyan-300">Home Form: {predictions.insights.homeForm}</div>
+                  <div className="text-cyan-300">Away Form: {predictions.insights.awayForm}</div>
+                  <div className="text-cyan-300">H2H Record: {predictions.insights.h2hRecord}</div>
+                  <div className="text-cyan-300">Form Difference: {predictions.insights.formDifference}</div>
+                </div>
               </div>
             )}
           </div>

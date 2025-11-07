@@ -1,32 +1,96 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS, cross_origin
 import pandas as pd
 import os
-from datetime import datetime
-import google.generativeai as genai
+from datetime import datetime, timedelta
+
+# Safe import for Google AI with fallback
+try:
+    import google.generativeai as genai
+    GOOGLE_AI_AVAILABLE = True
+    print("✓ Google Generative AI imported successfully")
+except ImportError:
+    GOOGLE_AI_AVAILABLE = False
+    print("✗ Google Generative AI not available - chatbot disabled")
+    # Create a dummy genai module for fallback
+    class DummyGenAI:
+        def configure(self, *args, **kwargs): pass
+        class GenerativeModel:
+            def __init__(self, *args, **kwargs): pass
+            def generate_content(self, *args, **kwargs):
+                class Response:
+                    text = "Chatbot is currently unavailable. Please make sure 'google-generativeai' package is installed."
+                return Response()
+    genai = DummyGenAI()
 
 app = Flask(__name__)
 
+# Enhanced configuration - using Flask's built-in session
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here-change-in-production')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+
 # Enhanced CORS configuration
-app.config['CORS_HEADERS'] = 'Content-Type'
-cors = CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
-        "supports_credentials": True
-    }
-})
+CORS(app, 
+     resources={
+         r"/*": {
+             "origins": ["http://localhost:3000", "http://127.0.0.1:3000", 
+                        "http://localhost:5173", "http://127.0.0.1:5173",
+                        "http://localhost:3001"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+             "supports_credentials": True,
+             "expose_headers": ["Content-Type", "Authorization"],
+             "max_age": 600
+         }
+     })
 
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+# Handle preflight requests globally
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "success"})
+        response.headers.add("Access-Control-Allow-Origin", 
+                           request.headers.get("Origin", "http://localhost:5173"))
+        response.headers.add("Access-Control-Allow-Headers", 
+                           "Content-Type, Authorization, Access-Control-Allow-Credentials")
+        response.headers.add("Access-Control-Allow-Methods", 
+                           "GET, POST, PUT, DELETE, OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
 
-# Configure Gemini API
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'your-gemini-api-key-here')
-genai.configure(api_key=GEMINI_API_KEY)
+# Configure Gemini API only if available
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    print("⚠️  GEMINI_API_KEY not found in environment variables")
+    print("⚠️  Chatbot will run in fallback mode")
+    GOOGLE_AI_AVAILABLE = False
 
-# Initialize the model
-model = genai.GenerativeModel('gemini-pro')
+model = None
+
+if GOOGLE_AI_AVAILABLE and GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        # Try the latest model names
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            print("✓ Using gemini-1.5-flash model")
+        except Exception as e:
+            try:
+                model = genai.GenerativeModel('gemini-1.0-pro')
+                print("✓ Using gemini-1.0-pro model")
+            except Exception as e:
+                try:
+                    model = genai.GenerativeModel('gemini-pro')
+                    print("✓ Using gemini-pro model")
+                except Exception as e:
+                    print(f"✗ All model attempts failed: {e}")
+                    model = None
+    except Exception as e:
+        print(f"✗ Gemini API configuration failed: {e}")
+        model = None
+else:
+    model = None
+    print("✗ Gemini API not configured - using fallback mode")
 
 # Get the base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +99,16 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 print("=" * 60)
 print("ScoreSight EPL Predictor API - Starting Up")
 print("=" * 60)
+print(f"Google AI Available: {'Yes' if GOOGLE_AI_AVAILABLE else 'No'}")
+print(f"Gemini API Key: {'Set' if GEMINI_API_KEY else 'Not Set'}")
+print(f"Model Initialized: {'Yes' if model else 'No'}")
+
+# Enhanced user database with email support
+users_db = {
+    'admin': {'password': 'admin123', 'name': 'Administrator', 'email': 'admin@scoresight.com'},
+    'user': {'password': 'user123', 'name': 'Test User', 'email': 'user@scoresight.com'},
+    'demo': {'password': 'demo123', 'name': 'Demo User', 'email': 'demo@scoresight.com'}
+}
 
 def get_football_context():
     """Provide context about the EPL predictor to the AI"""
@@ -120,6 +194,504 @@ def create_sample_data():
     }
     return pd.DataFrame(sample_data)
 
+# Load historical data
+historical_data = load_historical_data()
+
+# Authentication helper functions
+def is_authenticated():
+    """Check if user is authenticated"""
+    return session.get('authenticated', False) and session.get('user_id') in users_db
+
+def get_current_user():
+    """Get current user data"""
+    if is_authenticated():
+        username = session.get('user_id')
+        return users_db.get(username)
+    return None
+
+# =============================================================================
+# AUTHENTICATION ENDPOINTS
+# =============================================================================
+
+@app.route('/api/signup', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def signup():
+    """User registration endpoint"""
+    try:
+        data = request.json
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '').strip()
+        name = data.get('name', username)
+
+        if not username or not password or not email:
+            return jsonify({
+                'success': False,
+                'error': 'Username, email and password are required'
+            }), 400
+
+        # Check if user already exists
+        if username in users_db:
+            return jsonify({
+                'success': False,
+                'error': 'Username already exists'
+            }), 400
+
+        # Check if email already exists
+        for user in users_db.values():
+            if user.get('email') == email:
+                return jsonify({
+                    'success': False,
+                    'error': 'Email already registered'
+                }), 400
+
+        # Add new user
+        users_db[username] = {
+            'password': password,
+            'name': name,
+            'email': email
+        }
+
+        # Create session
+        session['user_id'] = username
+        session['authenticated'] = True
+        session.permanent = True
+
+        print(f"✓ New user registered: {username}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful',
+            'user': {
+                'username': username,
+                'name': name,
+                'email': email
+            },
+            'access_token': f'token-{username}-{datetime.now().timestamp()}'
+        })
+
+    except Exception as e:
+        print(f"Registration error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Registration failed'
+        }), 500
+
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def login():
+    """User login endpoint"""
+    try:
+        data = request.json
+        login_input = data.get('username') or data.get('email')
+        password = data.get('password')
+
+        if not login_input or not password:
+            return jsonify({
+                'success': False,
+                'error': 'Username/email and password are required'
+            }), 400
+
+        # Find user by username or email
+        user = None
+        username = None
+        
+        # Check if login input is username
+        if login_input in users_db:
+            user = users_db[login_input]
+            username = login_input
+        else:
+            # Check if login input is email
+            for uname, user_data in users_db.items():
+                if user_data.get('email') == login_input:
+                    user = user_data
+                    username = uname
+                    break
+
+        # Check if user exists and password matches
+        if user and user['password'] == password:
+            # Create session
+            session['user_id'] = username
+            session['authenticated'] = True
+            session.permanent = True
+
+            print(f"✓ User logged in: {username}")
+
+            return jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'user': {
+                    'username': username,
+                    'name': user['name'],
+                    'email': user.get('email', '')
+                },
+                'access_token': f'token-{username}-{datetime.now().timestamp()}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid username/email or password'
+            }), 401
+
+    except Exception as e:
+        print(f"Login error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Login failed'
+        }), 500
+
+@app.route('/api/logout', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def logout():
+    """User logout endpoint"""
+    try:
+        username = session.get('user_id')
+        session.clear()
+        print(f"✓ User logged out: {username}")
+        return jsonify({
+            'success': True,
+            'message': 'Logout successful'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'Logout failed'
+        }), 500
+
+@app.route('/api/check-auth', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def check_auth():
+    """Check if user is authenticated"""
+    try:
+        if is_authenticated():
+            username = session.get('user_id')
+            user_data = users_db.get(username)
+            if user_data:
+                return jsonify({
+                    'authenticated': True,
+                    'user': {
+                        'username': username,
+                        'name': user_data['name'],
+                        'email': user_data.get('email', '')
+                    }
+                })
+        
+        return jsonify({
+            'authenticated': False,
+            'user': None
+        })
+    except Exception as e:
+        return jsonify({
+            'authenticated': False,
+            'user': None
+        })
+
+# =============================================================================
+# MATCHES ENDPOINT - SINGLE VERSION
+# =============================================================================
+
+@app.route('/api/matches', methods=['GET', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def get_upcoming_matches():
+    """Get upcoming matches data"""
+    try:
+        # Check authentication
+        if not is_authenticated():
+            return jsonify({'error': 'Authentication required'}), 401
+
+        # Sample upcoming matches data
+        upcoming_matches = [
+            {
+                'id': 1,
+                'home_team': 'Man City',
+                'away_team': 'Liverpool',
+                'date': '2024-12-15',
+                'time': '15:00',
+                'venue': 'Etihad Stadium'
+            },
+            {
+                'id': 2,
+                'home_team': 'Arsenal',
+                'away_team': 'Chelsea',
+                'date': '2024-12-16',
+                'time': '17:30',
+                'venue': 'Emirates Stadium'
+            },
+            {
+                'id': 3,
+                'home_team': 'Man United',
+                'away_team': 'Tottenham',
+                'date': '2024-12-17',
+                'time': '15:00',
+                'venue': 'Old Trafford'
+            },
+            {
+                'id': 4,
+                'home_team': 'Newcastle',
+                'away_team': 'Aston Villa',
+                'date': '2024-12-18',
+                'time': '15:00',
+                'venue': 'St James Park'
+            },
+            {
+                'id': 5,
+                'home_team': 'West Ham',
+                'away_team': 'Brighton',
+                'date': '2024-12-19',
+                'time': '19:45',
+                'venue': 'London Stadium'
+            }
+        ]
+
+        return jsonify({
+            'matches': upcoming_matches,
+            'count': len(upcoming_matches),
+            'timestamp': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"Error in get_upcoming_matches: {str(e)}")
+        return jsonify({'error': 'Failed to fetch matches'}), 500
+
+# =============================================================================
+# PREDICTION ENDPOINTS
+# =============================================================================
+
+@app.route('/predict-ai-fixed', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def predict_ai_fixed():
+    """Improved AI prediction with realistic goal calculation"""
+    try:
+        # Check authentication
+        if not is_authenticated():
+            return jsonify({'error': 'Authentication required. Please login first.'}), 401
+
+        print("\n" + "="*40)
+        print("PREDICTION REQUEST RECEIVED")
+        print("="*40)
+        
+        data = request.json
+        home_team = data.get('HomeTeam')
+        away_team = data.get('AwayTeam')
+        match_date = data.get('Date', pd.Timestamp.now().strftime('%Y-%m-%d'))
+        
+        print(f"Prediction for: {home_team} vs {away_team} on {match_date}")
+        
+        if not home_team or not away_team:
+            return jsonify({'error': 'HomeTeam and AwayTeam are required'}), 400
+        
+        if home_team == away_team:
+            return jsonify({'error': 'Teams must be different'}), 400
+        
+        # Calculate features
+        print("Calculating team form...")
+        home_form = calculate_team_form_fixed(home_team, match_date, 5)
+        away_form = calculate_team_form_fixed(away_team, match_date, 5)
+        
+        print("Calculating H2H statistics...")
+        h2h_stats = calculate_h2h_stats_fixed(home_team, away_team, match_date)
+        
+        # Simple prediction logic based on form
+        form_diff = home_form['Points'] - away_form['Points']
+        h2h_diff = h2h_stats['H2H_HomeWins'] - h2h_stats['H2H_AwayWins']
+        
+        # Combined decision making
+        if form_diff > 4 or (form_diff > 2 and h2h_diff > 2):
+            outcome = 'Home Win'
+        elif form_diff < -4 or (form_diff < -2 and h2h_diff < -2):
+            outcome = 'Away Win'
+        else:
+            outcome = 'Draw'
+        
+        # Calculate realistic goals
+        home_goals, away_goals = calculate_realistic_goals(outcome, home_form, away_form, h2h_stats)
+        
+        # Calculate points
+        if outcome == 'Home Win':
+            home_points, away_points = 3, 0
+        elif outcome == 'Away Win':
+            home_points, away_points = 0, 3
+        else:
+            home_points, away_points = 1, 1
+        
+        # Calculate realistic confidence
+        confidence = calculate_realistic_confidence(outcome, home_form, away_form, h2h_stats)
+        
+        response = {
+            'outcome': outcome, 
+            'goalDifference': home_goals - away_goals,
+            'homeGoals': home_goals, 
+            'awayGoals': away_goals,
+            'homePoints': home_points, 
+            'awayPoints': away_points,
+            'confidence': confidence, 
+            'predictionMethod': 'Form-based AI Model',
+            'insights': {
+                'homeForm': f"{home_form['Wins']} wins, {home_form['Points']} pts",
+                'awayForm': f"{away_form['Wins']} wins, {away_form['Points']} pts",
+                'h2hRecord': f"{h2h_stats['H2H_HomeWins']}-{h2h_stats['H2H_Draws']}-{h2h_stats['H2H_AwayWins']}",
+                'formDifference': f"{form_diff} points"
+            }
+        }
+        
+        print(f"Prediction: {outcome} ({home_goals}-{away_goals}) - Confidence: {confidence:.1f}%")
+        print("="*40)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        print(f"ERROR in prediction: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
+
+# =============================================================================
+# CHAT ENDPOINTS
+# =============================================================================
+
+@app.route('/chat', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
+def chat():
+    """Chat endpoint using Gemini AI with fallback"""
+    try:
+        # Check authentication
+        if not is_authenticated():
+            return jsonify({'error': 'Authentication required. Please login first.'}), 401
+
+        data = request.json
+        user_message = data.get('message', '').strip()
+        conversation_history = data.get('conversation', [])
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        print(f"Chat request: {user_message}")
+
+        # Check if Google AI is available and model is initialized
+        if not GOOGLE_AI_AVAILABLE or model is None:
+            fallback_response = "I'm currently unavailable. Please make sure the Google Generative AI package is installed and a valid GEMINI_API_KEY is set in your environment variables."
+            print("Using fallback response - AI not available")
+            return jsonify({
+                'response': fallback_response,
+                'timestamp': datetime.now().isoformat(),
+                'fallback': True
+            })
+
+        # Build conversation context
+        context = get_football_context()
+        
+        # Add recent conversation history for context
+        history_text = ""
+        for msg in conversation_history[-6:]:  # Last 6 messages for context
+            sender = "User" if msg.get('sender') == 'user' else "Assistant"
+            history_text += f"{sender}: {msg.get('text', '')}\n"
+
+        # Create the prompt
+        prompt = f"""
+        {context}
+
+        Recent conversation history:
+        {history_text}
+
+        Current user message: {user_message}
+
+        Please provide a helpful, accurate response focused on English Premier League football.
+        If the user is asking for a specific match prediction, explain the factors that would influence it.
+        Keep responses concise but informative.
+        """
+
+        # Generate response with error handling
+        try:
+            response = model.generate_content(prompt)
+            
+            if response and response.text:
+                return jsonify({
+                    'response': response.text,
+                    'timestamp': datetime.now().isoformat(),
+                    'success': True
+                })
+            else:
+                return jsonify({
+                    'response': "I apologize, but I couldn't generate a response. Please try again.",
+                    'timestamp': datetime.now().isoformat(),
+                    'fallback': True
+                })
+                
+        except Exception as gen_error:
+            print(f"Gemini generation error: {gen_error}")
+            return jsonify({
+                'response': "I'm having trouble connecting to the AI service right now. Please try again in a moment.",
+                'timestamp': datetime.now().isoformat(),
+                'fallback': True
+            })
+
+    except Exception as e:
+        print(f"Chat error: {str(e)}")
+        return jsonify({
+            'response': "I'm experiencing technical difficulties. Please try again later.",
+            'error': str(e),
+            'fallback': True
+        }), 500
+
+# =============================================================================
+# UTILITY ENDPOINTS
+# =============================================================================
+
+@app.route('/test', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def test_connection():
+    """Test endpoint to check if server is working"""
+    return jsonify({
+        'message': 'Flask server is running!',
+        'status': 'success',
+        'timestamp': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'ai_chat_available': GOOGLE_AI_AVAILABLE,
+        'model_initialized': model is not None,
+        'gemini_api_key_set': bool(GEMINI_API_KEY),
+        'session_enabled': True
+    })
+
+@app.route('/chat-test', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def test_chat():
+    """Test endpoint for chat functionality"""
+    return jsonify({
+        'message': 'Chat endpoint is working!',
+        'ai_chat_available': GOOGLE_AI_AVAILABLE,
+        'model_initialized': model is not None,
+        'endpoints': {
+            '/chat': 'POST - Send chat messages',
+            '/predict-ai-fixed': 'POST - Get match predictions'
+        }
+    })
+
+@app.route('/')
+@cross_origin(supports_credentials=True)
+def home():
+    return jsonify({
+        'message': 'ScoreSight EPL Predictor API',
+        'version': '1.0',
+        'status': 'running',
+        'ai_chat_available': GOOGLE_AI_AVAILABLE,
+        'model_initialized': model is not None,
+        'gemini_api_key_set': bool(GEMINI_API_KEY),
+        'endpoints': {
+            '/api/login': 'POST - User login',
+            '/api/signup': 'POST - User registration',
+            '/api/logout': 'POST - User logout',
+            '/api/check-auth': 'GET - Check authentication status',
+            '/api/matches': 'GET - Get upcoming matches',
+            '/test': 'GET - Test connection',
+            '/predict-ai-fixed': 'POST - AI prediction with team names',
+            '/chat': 'POST - Chat with Gemini AI assistant'
+        },
+        'demo_credentials': {
+            'username': 'demo',
+            'password': 'demo123'
+        }
+    })
+
+# Add the missing helper functions
 def calculate_team_form_fixed(team_name, date, n_matches=5):
     """Calculate team form from recent matches"""
     try:
@@ -339,201 +911,9 @@ def calculate_realistic_confidence(outcome, home_form, away_form, h2h_stats):
         print(f"Error calculating confidence: {e}")
         return 70.0
 
-# Load historical data
-historical_data = load_historical_data()
-
-# =============================================================================
-# PREDICTION ENDPOINTS
-# =============================================================================
-
-@app.route('/predict-ai-fixed', methods=['POST', 'OPTIONS'])
-@cross_origin()
-def predict_ai_fixed():
-    """Improved AI prediction with realistic goal calculation"""
-    try:
-        print("\n" + "="*40)
-        print("PREDICTION REQUEST RECEIVED")
-        print("="*40)
-        
-        data = request.json
-        home_team = data.get('HomeTeam')
-        away_team = data.get('AwayTeam')
-        match_date = data.get('Date', pd.Timestamp.now().strftime('%Y-%m-%d'))
-        
-        print(f"Prediction for: {home_team} vs {away_team} on {match_date}")
-        
-        if not home_team or not away_team:
-            return jsonify({'error': 'HomeTeam and AwayTeam are required'}), 400
-        
-        if home_team == away_team:
-            return jsonify({'error': 'Teams must be different'}), 400
-        
-        # Calculate features
-        print("Calculating team form...")
-        home_form = calculate_team_form_fixed(home_team, match_date, 5)
-        away_form = calculate_team_form_fixed(away_team, match_date, 5)
-        
-        print("Calculating H2H statistics...")
-        h2h_stats = calculate_h2h_stats_fixed(home_team, away_team, match_date)
-        
-        # Simple prediction logic based on form
-        form_diff = home_form['Points'] - away_form['Points']
-        h2h_diff = h2h_stats['H2H_HomeWins'] - h2h_stats['H2H_AwayWins']
-        
-        # Combined decision making
-        if form_diff > 4 or (form_diff > 2 and h2h_diff > 2):
-            outcome = 'Home Win'
-        elif form_diff < -4 or (form_diff < -2 and h2h_diff < -2):
-            outcome = 'Away Win'
-        else:
-            outcome = 'Draw'
-        
-        # Calculate realistic goals
-        home_goals, away_goals = calculate_realistic_goals(outcome, home_form, away_form, h2h_stats)
-        
-        # Calculate points
-        if outcome == 'Home Win':
-            home_points, away_points = 3, 0
-        elif outcome == 'Away Win':
-            home_points, away_points = 0, 3
-        else:
-            home_points, away_points = 1, 1
-        
-        # Calculate realistic confidence
-        confidence = calculate_realistic_confidence(outcome, home_form, away_form, h2h_stats)
-        
-        response = {
-            'outcome': outcome, 
-            'goalDifference': home_goals - away_goals,
-            'homeGoals': home_goals, 
-            'awayGoals': away_goals,
-            'homePoints': home_points, 
-            'awayPoints': away_points,
-            'confidence': confidence, 
-            'predictionMethod': 'Form-based AI Model',
-            'insights': {
-                'homeForm': f"{home_form['Wins']} wins, {home_form['Points']} pts",
-                'awayForm': f"{away_form['Wins']} wins, {away_form['Points']} pts",
-                'h2hRecord': f"{h2h_stats['H2H_HomeWins']}-{h2h_stats['H2H_Draws']}-{h2h_stats['H2H_AwayWins']}",
-                'formDifference': f"{form_diff} points"
-            }
-        }
-        
-        print(f"Prediction: {outcome} ({home_goals}-{away_goals}) - Confidence: {confidence:.1f}%")
-        print("="*40)
-        
-        return jsonify(response)
-        
-    except Exception as e:
-        print(f"ERROR in prediction: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
-
-# =============================================================================
-# CHAT ENDPOINTS
-# =============================================================================
-
-@app.route('/chat', methods=['POST', 'OPTIONS'])
-@cross_origin()
-def chat():
-    """Chat endpoint using Gemini AI"""
-    try:
-        data = request.json
-        user_message = data.get('message', '').strip()
-        conversation_history = data.get('conversation', [])
-
-        if not user_message:
-            return jsonify({'error': 'Message is required'}), 400
-
-        print(f"Chat request: {user_message}")
-
-        # Build conversation context
-        context = get_football_context()
-        
-        # Add recent conversation history for context
-        history_text = ""
-        for msg in conversation_history[-6:]:  # Last 6 messages for context
-            sender = "User" if msg.get('sender') == 'user' else "Assistant"
-            history_text += f"{sender}: {msg.get('text', '')}\n"
-
-        # Create the prompt
-        prompt = f"""
-        {context}
-
-        Recent conversation history:
-        {history_text}
-
-        Current user message: {user_message}
-
-        Please provide a helpful, accurate response focused on English Premier League football.
-        If the user is asking for a specific match prediction, explain the factors that would influence it.
-        Keep responses concise but informative.
-        """
-
-        # Generate response
-        response = model.generate_content(prompt)
-
-        if response.text:
-            return jsonify({
-                'response': response.text,
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({
-                'response': "I apologize, but I couldn't generate a response. Please try again.",
-                'timestamp': datetime.now().isoformat()
-            }), 500
-
-    except Exception as e:
-        print(f"Chat error: {str(e)}")
-        return jsonify({
-            'response': "I'm experiencing technical difficulties. Please try again later.",
-            'error': str(e)
-        }), 500
-
-# =============================================================================
-# UTILITY ENDPOINTS
-# =============================================================================
-
-@app.route('/test', methods=['GET'])
-@cross_origin()
-def test_connection():
-    """Test endpoint to check if server is working"""
-    return jsonify({
-        'message': 'Flask server is running!',
-        'status': 'success',
-        'timestamp': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
-    })
-
-@app.route('/chat-test', methods=['GET'])
-@cross_origin()
-def test_chat():
-    """Test endpoint for chat functionality"""
-    return jsonify({
-        'message': 'Chat endpoint is working!',
-        'endpoints': {
-            '/chat': 'POST - Send chat messages',
-            '/predict-ai-fixed': 'POST - Get match predictions'
-        }
-    })
-
-@app.route('/')
-@cross_origin()
-def home():
-    return jsonify({
-        'message': 'ScoreSight EPL Predictor API with Gemini Chat',
-        'version': '1.0',
-        'status': 'running',
-        'endpoints': {
-            '/test': 'GET - Test connection',
-            '/chat-test': 'GET - Test chat connection',
-            '/predict-ai-fixed': 'POST - AI prediction with team names',
-            '/chat': 'POST - Chat with Gemini AI assistant'
-        }
-    })
-
 if __name__ == '__main__':
-    print("Starting Flask server with Gemini AI...")
-    print(f"Gemini API configured: {'Yes' if GEMINI_API_KEY != 'your-gemini-api-key-here' else 'No - using placeholder'}")
+    print("Starting Flask server...")
+    print(f"Google AI Available: {'Yes' if GOOGLE_AI_AVAILABLE else 'No'}")
+    print(f"Gemini API Key Set: {'Yes' if GEMINI_API_KEY else 'No'}")
+    print(f"Model Initialized: {'Yes' if model else 'No'}")
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)

@@ -45,7 +45,15 @@ const GeminiChatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/chat', {
+      const API_URL = 'http://localhost:5000';
+      
+      // Test connection first
+      const testResponse = await fetch(`${API_URL}/test`);
+      if (!testResponse.ok) {
+        throw new Error('Cannot connect to server');
+      }
+
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,8 +64,17 @@ const GeminiChatbot = () => {
         })
       });
 
+      console.log('Chat response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -74,7 +91,7 @@ const GeminiChatbot = () => {
       console.error('Chat error:', error);
       const errorMessage = {
         id: Date.now() + 1,
-        text: "I'm sorry, I'm having trouble connecting to the server. Please make sure the Flask server is running.",
+        text: "I'm having trouble connecting to the AI service. Please make sure the Flask server is running on port 5000 and try again.",
         sender: 'bot',
         timestamp: new Date(),
         isError: true

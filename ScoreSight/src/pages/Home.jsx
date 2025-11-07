@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Calendar, Users, TrendingUp, ArrowRight, Brain } from 'lucide-react';
 
-const Home = ({ user, onNavigate }) => { // Add onNavigate prop
+const Home = ({ user, onNavigate }) => {
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
@@ -13,25 +13,76 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
 
   const fetchUpcomingMatches = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/matches', {
+        method: 'GET',
+        credentials: 'include', // Important for session cookies
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
         const data = await response.json();
         setUpcomingMatches(data.matches.slice(0, 5));
+      } else {
+        // If endpoint returns error, use sample data
+        setUpcomingMatches(getSampleMatches());
       }
     } catch (error) {
       console.error('Error fetching matches:', error);
+      // Fallback to sample data if fetch fails
+      setUpcomingMatches(getSampleMatches());
     } finally {
       setLoading(false);
     }
   };
 
+  // Sample matches data as fallback
+  const getSampleMatches = () => [
+    {
+      id: 1,
+      home_team: 'Man City',
+      away_team: 'Liverpool',
+      date: '2024-12-15',
+      time: '15:00',
+      venue: 'Etihad Stadium'
+    },
+    {
+      id: 2,
+      home_team: 'Arsenal',
+      away_team: 'Chelsea',
+      date: '2024-12-16',
+      time: '17:30',
+      venue: 'Emirates Stadium'
+    },
+    {
+      id: 3,
+      home_team: 'Man United',
+      away_team: 'Tottenham',
+      date: '2024-12-17',
+      time: '15:00',
+      venue: 'Old Trafford'
+    },
+    {
+      id: 4,
+      home_team: 'Newcastle',
+      away_team: 'Aston Villa',
+      date: '2024-12-18',
+      time: '15:00',
+      venue: 'St James Park'
+    },
+    {
+      id: 5,
+      home_team: 'West Ham',
+      away_team: 'Brighton',
+      date: '2024-12-19',
+      time: '19:45',
+      venue: 'London Stadium'
+    }
+  ];
+
   const fetchDashboardStats = async () => {
+    // Sample stats - you can replace this with actual API call later
     setStats({
       totalPredictions: 47,
       accuracy: 75,
@@ -55,7 +106,7 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
       {/* Welcome Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-          Welcome back, {user.username}! 👋
+          Welcome back, {user?.username || 'User'}! 👋
         </h1>
         <p className="text-xl text-blue-200 max-w-4xl mx-auto">
           Ready to explore today's Premier League predictions and insights?
@@ -95,8 +146,8 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
         </div>
       </div>
 
-      {/* Action Cards - FIXED NAVIGATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 max-w-7xl mx-auto">
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 max-w-7xl mx-auto">
         <button
           onClick={() => onNavigate('user-input')}
           className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 group text-left w-full"
@@ -116,26 +167,6 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
           </div>
         </button>
 
-        {/* <button
-          onClick={() => onNavigate('model-predict')}
-          className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 group text-left w-full"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              {/* <h3 className="text-2xl font-bold text-white mb-2">Model Predictions</h3> */}
-              {/* <p className="text-blue-200 mb-4">
-                View AI-generated predictions for upcoming matches
-              </p>
-              <div className="flex items-center text-purple-400 group-hover:text-purple-300">
-                <span className="font-medium">View Predictions</span>
-                <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-            <TrendingUp className="h-12 w-12 text-purple-400" />
-          </div>
-        </button> */} 
-
-        {/* AI Predictor Card - ADDED */}
         <button
           onClick={() => onNavigate('ai-predictor')}
           className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 rounded-2xl p-8 hover:border-cyan-400/50 transition-all duration-300 hover:scale-105 group text-left w-full"
@@ -156,20 +187,16 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
         </button>
       </div>
 
-      {/* Upcoming Matches - FIXED NAVIGATION */}
+      {/* Upcoming Matches */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Calendar className="h-6 w-6 text-blue-400" />
             Upcoming Matches
           </h2>
-          <button
-            onClick={() => onNavigate('model-predict')}
-            className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1"
-          >
-            View All
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <span className="text-blue-400 text-sm font-medium">
+            {upcomingMatches.length} matches
+          </span>
         </div>
 
         {loading ? (
@@ -187,7 +214,7 @@ const Home = ({ user, onNavigate }) => { // Add onNavigate prop
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-semibold text-lg">{match.home_team}</span>
-                      <span className="text-blue-200 text-sm">VS</span>
+                      <span className="text-blue-200 text-sm mx-4">VS</span>
                       <span className="text-white font-semibold text-lg">{match.away_team}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-blue-200">

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Trophy } from 'lucide-react';
 
-const Login = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
+const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -29,13 +29,14 @@ const Login = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for sessions
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        onLogin(data.user, data.access_token); // This will handle the navigation
+      if (data.success) {
+        onLogin(data.user, data.access_token);
       } else {
         setError(data.error || 'Login failed');
       }
@@ -73,18 +74,18 @@ const Login = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-blue-200">
-                  Email Address
+                <label htmlFor="username" className="block text-sm font-medium text-blue-200">
+                  Username or Email
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
-                  value={formData.email}
+                  value={formData.username}
                   onChange={handleChange}
                   className="mt-1 block w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  placeholder="Enter your email"
+                  placeholder="Enter your username or email"
                 />
               </div>
 
@@ -138,7 +139,7 @@ const Login = ({ onLogin }) => { // Remove useNavigate, use onLogin prop
                 Don't have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => window.location.reload()} // Simple reload to show signup
+                  onClick={() => window.location.href = '/?signup=true'}
                   className="text-green-400 hover:text-green-300 font-medium"
                 >
                   Sign up here
