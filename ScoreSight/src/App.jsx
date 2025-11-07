@@ -3,7 +3,6 @@ import Navbar from './components/Layout/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-// import ModelPredict from './pages/ModelPredict';
 import UserInputPredict from './pages/UserInputPredict';
 import AIPredictor from './components/AIPredictor';
 import GeminiChatbot from './components/GeminiChatbot';
@@ -15,46 +14,61 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUserProfile(token);
-    } else {
-      setLoading(false);
-    }
+    checkAuthStatus();
   }, []);
 
-  const fetchUserProfile = async (token) => {
+  const checkAuthStatus = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch('http://localhost:5000/api/check-auth', {
+        method: 'GET',
+        credentials: 'include' // Important for session cookies
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      
+      if (data.authenticated && data.user) {
         setUser(data.user);
+        // Store user info in localStorage for quick access
+        localStorage.setItem('user', JSON.stringify(data.user));
       } else {
-        localStorage.removeItem('token');
+        setUser(null);
+        localStorage.removeItem('user');
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      localStorage.removeItem('token');
+      console.error('Error checking auth status:', error);
+      setUser(null);
+      localStorage.removeItem('user');
     } finally {
       setLoading(false);
     }
   };
 
-  const login = (userData, token) => {
+  const login = async (userData, token) => {
     setUser(userData);
-    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    if (token) {
+      localStorage.setItem('token', token);
+    }
     setCurrentPage('home');
+    
+    // Verify the login worked
+    await checkAuthStatus();
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('token');
-    setCurrentPage('home');
+  const logout = async () => {
+    try {
+      await fetch('http://localhost:5000/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setCurrentPage('home');
+    }
   };
 
   const showLogin = () => {
@@ -66,19 +80,24 @@ function App() {
   };
 
   const renderPage = () => {
+    // If no user, show authentication pages
     if (!user) {
-      if (currentPage === 'login') return <Login onLogin={login} />;
-      if (currentPage === 'signup') return <Signup onLogin={login} />;
-      return <Login onLogin={login} />;
+      switch (currentPage) {
+        case 'login':
+          return <Login onLogin={login} />;
+        case 'signup':
+          return <Signup onLogin={login} />;
+        default:
+          return <Login onLogin={login} />;
+      }
     }
 
+    // If user is authenticated, show app pages
     switch (currentPage) {
       case 'home':
         return <Home user={user} onNavigate={setCurrentPage} />;
       case 'user-input':
         return <UserInputPredict />;
-      // case 'model-predict':
-        // return <ModelPredict />;
       case 'ai-predictor':
         return <AIPredictor />;
       default:
@@ -109,7 +128,7 @@ function App() {
         {renderPage()}
       </main>
 
-    <GeminiChatbot />
+      <GeminiChatbot />
     </div>
   );
 }
