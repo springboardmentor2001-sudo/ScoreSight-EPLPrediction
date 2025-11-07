@@ -33,7 +33,7 @@ pip install -r requirements.txt
 cp .env.example .env   # Add your API keys here
 uvicorn main:app --reload --port 8000
 
-2) Frontend
+2) Frontend Setup
 cd ../frontend
 npm install
 npm start
@@ -41,34 +41,32 @@ npm start
 📂 Project Structure
 scoresight/
 ├── backend/
-│   ├── main.py           # FastAPI server
-│   ├── auth.py           # User login & JWT
-│   ├── chatbot_service.py # AI match assistant
-│   └── ml-models/         # Trained ML models
+│   ├── main.py               # FastAPI server
+│   ├── auth.py               # JWT authentication logic
+│   ├── chatbot_service.py    # AI Football Chat Assistant
+│   └── ml-models/            # Trained ML Model Files
 └── frontend/
     └── src/
-        ├── components/
-        ├── pages/
-        └── services/     # API calls
+        ├── components/       # UI Components
+        ├── pages/            # Screens / Views
+        └── services/         # API Requests
 
 🎯 Example Usage
-
-Match Prediction
+Match Prediction (Pre-Match)
 GET /api/predict?home_team=Man City&away_team=Liverpool
 
-Half-Time Prediction
+Half-Time Prediction (Live Stats)
 POST /api/half-time-predict
 {
   "shots_on_target": 4,
   "possession_home": 61,
-  "possession_away": 39,
-  ...
+  "possession_away": 39
 }
 
-Team Analytics
+Team Analysis
 GET /api/teams/Arsenal/analysis
 
 📈 Model Overview
-Model	Accuracy	Description
+Model	Accuracy	Technique
 Pre-Match Ensemble	75.7%	Random Forest + XGBoost + Logistic Regression
-Half-Time Model	68.1%	Real-time match feature analysis
+Half-Time Live Model	68.1%	Real-time match feature analysis
