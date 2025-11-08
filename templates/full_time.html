@@ -1,0 +1,164 @@
+{% extends "base.html" %} 
+{% block title %}Full-Time Predictor | EPL Predictor{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4 text-white">⏳ Full-Time Predictor ⏳</h2>
+
+  <div class="form-card p-4 rounded-4 shadow-lg">
+    <form action="/fulltime" method="POST" class="text-center">
+
+      <!-- 📅 Match Date -->
+      <div class="mt-3 mb-4">
+        <label class="form-label fs-5">📅 Match Date</label>
+        <input type="date" name="match_date" class="form-control text-center w-50 mx-auto" required>
+      </div>
+
+      <!-- Flex container for both sides -->
+      <div class="teams-row d-flex justify-content-between align-items-start flex-wrap">
+
+        <!-- 🏠 Home Section -->
+        <div class="team-col">
+          <label class="form-label fs-5">🏠 Home Team</label>
+          <img id="homeLogoFT" src="/static/default_logo.svg" class="team-logo-ft" style="display:none;">
+          <select id="homeTeamFT" name="home_team" class="form-select text-center" required>
+            <option value="" disabled selected>Select Home Team</option>
+            {% for team in teams %}
+              <option value="{{ team }}">{{ team }}</option>
+            {% endfor %}
+          </select>
+
+          <label class="form-label mt-3">Half-Time Home Goals (HTHG)</label>
+          <input type="number" step="1" name="ht_home" class="form-control text-center" required>
+        </div>
+
+        <!-- 🚩 Away Section -->
+        <div class="team-col">
+          <label class="form-label fs-5">🚩 Away Team</label>
+          <img id="awayLogoFT" src="/static/default_logo.svg" class="team-logo-ft" style="display:none;">
+          <select id="awayTeamFT" name="away_team" class="form-select text-center" required>
+            <option value="" disabled selected>Select Away Team</option>
+            {% for team in teams %}
+              <option value="{{ team }}">{{ team }}</option>
+            {% endfor %}
+          </select>
+
+          <label class="form-label mt-3">Half-Time Away Goals (HTAG)</label>
+          <input type="number" step="1" name="ht_away" class="form-control text-center" required>
+        </div>
+      </div>
+
+      <!-- 🔮 Predict Button -->
+      <div class="mt-4">
+        <button type="submit" class="btn btn-warning px-4 fw-semibold text-dark">
+          🔮 Predict Full-Time Result
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+body {
+  background: linear-gradient(135deg, #3a0ca3, #7209b7, #b5179e);
+  background-attachment: fixed;
+  background-size: cover;
+  min-height: 100vh;
+  color: white;
+  margin: 0;
+}
+
+.form-card {
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
+  max-width: 950px;
+  margin: 0 auto;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.teams-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.team-col {
+  flex: 1 1 350px;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.team-logo-ft {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin: 10px auto 15px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  display: block;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #4a148c;
+}
+
+select.form-select,
+input.form-control {
+  width: 85%;
+  margin: 8px auto;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.btn-warning {
+  background: #ffca28;
+  border: none;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+.btn-warning:hover {
+  background: #f5b300;
+  color: #3a0ca3;
+}
+</style>
+
+<script>
+async function fetchLogo(teamName) {
+  if(!teamName) return null;
+  const res = await fetch('/get_logo/' + encodeURIComponent(teamName));
+  if(!res.ok) return null;
+  const data = await res.json();
+  return data.logo;
+}
+
+function showLogoFT(id, url) {
+  const el = document.getElementById(id);
+  if(url) { el.src = url; el.style.display = 'block'; } 
+  else { el.style.display = 'none'; }
+}
+
+document.getElementById('homeTeamFT').addEventListener('change', async function(){
+  showLogoFT('homeLogoFT', await fetchLogo(this.value));
+});
+document.getElementById('awayTeamFT').addEventListener('change', async function(){
+  showLogoFT('awayLogoFT', await fetchLogo(this.value));
+});
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const h = document.getElementById('homeTeamFT');
+  const a = document.getElementById('awayTeamFT');
+  if(h && h.value) showLogoFT('homeLogoFT', await fetchLogo(h.value));
+  if(a && a.value) showLogoFT('awayLogoFT', await fetchLogo(a.value));
+});
+</script>
+{% endblock %}

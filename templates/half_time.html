@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}Half-Time Predictor | EPL Predictor{% endblock %}
+
+{% block content %}
+<div class="halftime-container">
+  <h2 class="page-title">⚽ Half-Time Predictor ⚽</h2>
+
+  <form action="/halftime" method="POST" class="team-form">
+
+      <!-- 🗓️ Match Date -->
+      <div class="date-section">
+        <label for="match_date">📅 Match Date</label>
+        <input type="date" id="match_date" name="match_date" required>
+      </div>
+
+      <!-- 🧩 Teams Row -->
+      <div class="teams-row">
+
+        <!-- HOME -->
+        <div class="team-column home">
+            <h3>🏠 Home Team</h3>
+
+            <div style="text-align:center;">
+              <img id="homeLogo" src="/static/default_logo.svg" alt="Home logo" class="team-logo" style="display:none;">
+            </div>
+
+            <label>Select Team</label>
+            <select id="homeTeam" name="home_team" required>
+                <option value="" disabled selected>Select Home Team</option>
+                {% for team in teams %}
+                <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Shots (HS)</label>
+            <input type="number" name="HS" required>
+
+            <label>Shots on Target (HST)</label>
+            <input type="number" name="HST" required>
+
+            <label>Fouls (HF)</label>
+            <input type="number" name="HF" required>
+
+            <label>Corners (HC)</label>
+            <input type="number" name="HC" required>
+
+            <label>Yellow Cards (HY)</label>
+            <input type="number" name="HY" required>
+
+            <label>Red Cards (HR)</label>
+            <input type="number" name="HR" required>
+        </div>
+
+        <!-- AWAY -->
+        <div class="team-column away">
+            <h3>🚩 Away Team</h3>
+
+            <div style="text-align:center;">
+              <img id="awayLogo" src="/static/default_logo.svg" alt="Away logo" class="team-logo" style="display:none;">
+            </div>
+
+            <label>Select Team</label>
+            <select id="awayTeam" name="away_team" required>
+                <option value="" disabled selected>Select Away Team</option>
+                {% for team in teams %}
+                <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Shots (AS)</label>
+            <input type="number" name="AS" required>
+
+            <label>Shots on Target (AST)</label>
+            <input type="number" name="AST" required>
+
+            <label>Fouls (AF)</label>
+            <input type="number" name="AF" required>
+
+            <label>Corners (AC)</label>
+            <input type="number" name="AC" required>
+
+            <label>Yellow Cards (AY)</label>
+            <input type="number" name="AY" required>
+
+            <label>Red Cards (AR)</label>
+            <input type="number" name="AR" required>
+        </div>
+      </div>
+
+      <div class="predict-btn">
+          <button type="submit">🔮 Predict Half-Time</button>
+      </div>
+  </form>
+</div>
+
+<style>
+body {
+  background: linear-gradient(135deg, #2b1055, #7b1fa2);
+  background-attachment: fixed;
+  color: white;
+  min-height: 100vh;
+}
+
+.halftime-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 2em;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+/* 🗓️ Date Field Styling */
+.date-section {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 14px 18px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  width: 300px;
+  text-align: left;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  margin: 0 auto;
+}
+.date-section input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  color: #000;
+}
+
+/* 🔹 Main Form Layout */
+.team-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* 🔸 Home & Away Side-by-Side */
+.teams-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.team-column {
+  flex: 1;
+  min-width: 320px;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  color: #fff;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: #000;
+}
+
+.team-logo {
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+  margin: 8px auto 12px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.predict-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: 18px;
+}
+button {
+  background: #ffca28;
+  color: #2b1055;
+  padding: 10px 26px;
+  border-radius: 10px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover {
+  background: #f5b300;
+}
+
+@media (max-width:900px){
+  .teams-row { flex-direction: column; align-items: center; }
+}
+</style>
+
+<script>
+async function fetchLogo(teamName) {
+  if(!teamName) return null;
+  const res = await fetch('/get_logo/' + encodeURIComponent(teamName));
+  if(!res.ok) return null;
+  const data = await res.json();
+  return data.logo;
+}
+
+function showLogo(imgId, url) {
+  const el = document.getElementById(imgId);
+  if(url) {
+    el.src = url;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+document.getElementById('homeTeam').addEventListener('change', async function() {
+  const logo = await fetchLogo(this.value);
+  showLogo('homeLogo', logo);
+});
+
+document.getElementById('awayTeam').addEventListener('change', async function() {
+  const logo = await fetchLogo(this.value);
+  showLogo('awayLogo', logo);
+});
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const homeSel = document.getElementById('homeTeam');
+  const awaySel = document.getElementById('awayTeam');
+  if(homeSel && homeSel.value) showLogo('homeLogo', await fetchLogo(homeSel.value));
+  if(awaySel && awaySel.value) showLogo('awayLogo', await fetchLogo(awaySel.value));
+});
+</script>
+{% endblock %}
