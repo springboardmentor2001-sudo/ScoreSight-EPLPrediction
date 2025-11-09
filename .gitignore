@@ -1,0 +1,14 @@
+# Ignore Python virtual environment
+backend/venv/
+
+# Ignore Python cache
+**/__pycache__/
+*.pyc
+
+# Ignore node modules
+scoresight/node_modules/
+
+# Ignore environment files
+*.env
+backend/.env
+scoresight/.env

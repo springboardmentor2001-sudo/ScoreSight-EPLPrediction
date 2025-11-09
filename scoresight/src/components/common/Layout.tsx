@@ -25,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'Dashboard', path: '/' },
     { label: 'AI Predictions', path: '/predictions/pre-match' },
     { label: 'Team Analysis', path: '/team-analysis' },
+    { label: 'News & Blogs', path: '/news' }, // ← ADD THIS LINE
     { label: 'AI Analyst', path: '/chat' },
     { label: 'Half-Time Predictions', path: '/predictions/half-time' }
   ];

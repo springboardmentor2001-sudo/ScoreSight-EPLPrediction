@@ -13,6 +13,8 @@ import ApiStatus from './components/common/ApiStatus';
 import PredictionPage from './pages/PredictionPage';
 import AuthPage from './pages/AuthPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NewsProvider } from './contexts/NewsContext';
+import NewsPage from './pages/NewsPage';
 
 const darkTheme = createTheme({
   palette: {
@@ -236,6 +238,19 @@ function AppContent() {
           } 
         />
 
+        {/* Add News Page Route */}
+        <Route 
+          path="/news" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ApiStatus />
+                <NewsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -248,7 +263,9 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <AuthProvider>
-        <AppContent />
+        <NewsProvider>
+          <AppContent />
+        </NewsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

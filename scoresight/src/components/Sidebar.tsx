@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Article } from '@mui/icons-material';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const Sidebar: React.FC = () => {
     { text: 'DASHBOARD', icon: <Dashboard />, path: '/' },
     { text: 'AI PREDICTIONS', icon: <Analytics />, path: '/predictions/pre-match' },
     { text: 'TEAM ANALYSIS', icon: <SportsSoccer />, path: '/team-analysis' },
+    { text: 'NEWS & BLOGS', icon: <Article />, path: '/news' },
     { text: 'AI ANALYST', icon: <SmartToy />, path: '/chat' },
   ];
 

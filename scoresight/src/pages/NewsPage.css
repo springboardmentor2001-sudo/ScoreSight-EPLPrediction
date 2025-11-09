@@ -1,0 +1,24 @@
+.news-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.featured-article {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.news-card:hover {
+  transform: translateY(-4px);
+  transition: transform 0.3s ease;
+}
+
+.tag-chip {
+  margin: 2px;
+}

@@ -13,6 +13,9 @@ from xgboost import XGBClassifier
 from typing import Dict, List, Any
 import re
 from dotenv import load_dotenv
+from fastapi import APIRouter
+from news_service import news_service
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -2044,6 +2047,26 @@ async def predict_match_fixed(home_team: str, away_team: str):
             "model_loaded": ml_models is not None
         }
 
+news_router = APIRouter(prefix="/api/news", tags=["news"])
+
+@app.get("/api/news/epl")
+async def get_epl_news(limit: int = 10):
+    """Get latest EPL news"""
+    try:
+        news = news_service.get_all_news(limit=limit)
+        return {
+            "success": True,
+            "data": news,
+            "count": len(news)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "data": []
+        }
+    
+app.include_router(news_router)
 # =============================================================================
 # IMPORT ACTUAL CHATBOT SERVICE (This will replace the placeholder)
 # =============================================================================
