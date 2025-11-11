@@ -1,9 +1,10 @@
 import React from 'react';
-import { Trophy, Home, LogOut, User, BarChart3, Brain } from 'lucide-react';
+import { Trophy, Home, LogOut, User, BarChart3, Brain, Calendar } from 'lucide-react';
 
 const Navbar = ({ user, onLogout, currentPage, onNavigate, onShowLogin, onShowSignup }) => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
+    { id: 'matches', label: 'Matches', icon: Calendar },
     { id: 'user-input', label: 'Predict Match', icon: Trophy },
     // { id: 'model-predict', label: 'Model Predictions', icon: BarChart3 },
     { id: 'ai-predictor', label: 'AI Predictor', icon: Brain },
@@ -19,7 +20,7 @@ const Navbar = ({ user, onLogout, currentPage, onNavigate, onShowLogin, onShowSi
             className="flex items-center space-x-3"
           >
             <Trophy className="h-8 w-8 text-yellow-400" />
-            <span className="text-white text-xl font-bold">ScoreSight</span>
+            <span className="text-white text-xl font-bold cursor-pointer">ScoreSight</span>
           </button>
 
           {/* Navigation Links */}
@@ -32,7 +33,7 @@ const Navbar = ({ user, onLogout, currentPage, onNavigate, onShowLogin, onShowSi
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
                     isActive
                       ? 'bg-white/20 text-white shadow-lg'
                       : 'text-blue-200 hover:text-white hover:bg-white/10'
@@ -55,7 +56,7 @@ const Navbar = ({ user, onLogout, currentPage, onNavigate, onShowLogin, onShowSi
                 </div>
                 <button
                   onClick={onLogout}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
                 >
                   <LogOut size={18} />
                   <span>Logout</span>
@@ -64,13 +65,13 @@ const Navbar = ({ user, onLogout, currentPage, onNavigate, onShowLogin, onShowSi
             ) : (
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={onShowLogin} // Use the handler from props
+                  onClick={onShowLogin}
                   className="text-blue-200 hover:text-white transition-colors"
                 >
                   Login
                 </button>
                 <button
-                  onClick={onShowSignup} // Use the handler from props
+                  onClick={onShowSignup}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Sign Up
