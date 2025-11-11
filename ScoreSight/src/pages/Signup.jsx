@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, UserPlus, Trophy } from 'lucide-react';
 
-const Signup = ({ onLogin }) => {
+const Signup = ({ onLogin, onShowLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -190,8 +190,8 @@ const Signup = ({ onLogin }) => {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => window.location.href = '/?login=true'}
-                  className="text-green-400 hover:text-green-300 font-medium"
+                  onClick={onShowLogin}
+                  className="text-green-400 hover:text-green-300 font-medium transition-colors duration-200"
                 >
                   Sign in here
                 </button>

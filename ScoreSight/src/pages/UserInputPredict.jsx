@@ -176,14 +176,6 @@ const UserInputPredict = () => {
               </div>
             </div>
 
-            {/* Note about simplified prediction */}
-            <div className="bg-yellow-500/20 p-4 rounded-lg border border-yellow-400/30">
-              <p className="text-yellow-200 text-sm text-center">
-                <strong>Note:</strong> This prediction uses team form and historical data analysis. 
-                The detailed statistics inputs below are for display purposes only.
-              </p>
-            </div>
-
             {/* Half-Time Statistics */}
             <div className="bg-green-500/20 p-6 rounded-xl border border-green-400/30">
               <h3 className="text-green-200 font-semibold mb-4 text-lg flex items-center gap-2">
