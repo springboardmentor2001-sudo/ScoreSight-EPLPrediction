@@ -126,13 +126,6 @@ const AIPredictor = () => {
           <h1 className="text-4xl font-bold text-cyan-400 mb-2">EPL Match Predictor</h1>
           <p className="text-slate-300">AI-Powered Match Outcome Prediction</p>
           
-          {/* Test Connection Button */}
-          <button
-            onClick={testConnection}
-            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-          >
-            Test Server Connection
-          </button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
