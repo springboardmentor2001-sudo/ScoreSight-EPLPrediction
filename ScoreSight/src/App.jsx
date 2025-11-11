@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserInputPredict from './pages/UserInputPredict';
 import AIPredictor from './components/AIPredictor';
+import Matches from './pages/Matches';
 import GeminiChatbot from './components/GeminiChatbot';
 import './App.css';
 
@@ -21,18 +22,19 @@ function App() {
     try {
       const response = await fetch('http://localhost:5000/api/check-auth', {
         method: 'GET',
-        credentials: 'include' // Important for session cookies
+        credentials: 'include'
       });
       
       const data = await response.json();
       
       if (data.authenticated && data.user) {
         setUser(data.user);
-        // Store user info in localStorage for quick access
         localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('✅ User authenticated:', data.user.username);
       } else {
         setUser(null);
         localStorage.removeItem('user');
+        console.log('❌ User not authenticated');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -50,8 +52,6 @@ function App() {
       localStorage.setItem('token', token);
     }
     setCurrentPage('home');
-    
-    // Verify the login worked
     await checkAuthStatus();
   };
 
@@ -68,6 +68,7 @@ function App() {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       setCurrentPage('home');
+      console.log('✅ User logged out');
     }
   };
 
@@ -80,19 +81,17 @@ function App() {
   };
 
   const renderPage = () => {
-    // If no user, show authentication pages
     if (!user) {
       switch (currentPage) {
         case 'login':
-          return <Login onLogin={login} />;
+          return <Login onLogin={login} onShowSignup={showSignup} />;
         case 'signup':
-          return <Signup onLogin={login} />;
+          return <Signup onLogin={login} onShowLogin={showLogin} />;
         default:
-          return <Login onLogin={login} />;
+          return <Login onLogin={login} onShowSignup={showSignup} />;
       }
     }
 
-    // If user is authenticated, show app pages
     switch (currentPage) {
       case 'home':
         return <Home user={user} onNavigate={setCurrentPage} />;
@@ -100,6 +99,8 @@ function App() {
         return <UserInputPredict />;
       case 'ai-predictor':
         return <AIPredictor />;
+      case 'matches':
+        return <Matches onNavigate={setCurrentPage} />;
       default:
         return <Home user={user} onNavigate={setCurrentPage} />;
     }
