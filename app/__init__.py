@@ -1,0 +1,3 @@
+"""
+ScoreSight Flask Application Package
+"""
