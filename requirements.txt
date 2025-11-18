@@ -1,9 +1,5 @@
-Flask
-requests
-numpy
 pandas
+numpy
 scikit-learn
-joblib
-python-dotenv
-google-generativeai
-gunicorn
+seaborn
+Flask

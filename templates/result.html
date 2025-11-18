@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Result</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a1f33, #1d3d5f);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .result-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .result-card:hover { transform: scale(1.03); }
+        h1 { color: #00c8ff; margin-bottom: 10px; font-size: 1.8rem; }
+        .date-info { color: #c8d6e5; font-size: 1rem; margin-bottom: 15px; }
+        .winner { font-size: 1.6rem; font-weight: bold; margin: 15px 0; color: #ffd32a; }
+        .score { color: #dfe6e9; margin-bottom: 15px; font-size: 1.2rem; }
+        .prob { margin-top: 15px; line-height: 1.8; font-size: 1rem; }
+        a {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 10px 20px;
+            background: #00c8ff;
+            color: #062025;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        a:hover { background: #00a5d1; }
+    </style>
+</head>
+<body>
+    <div class="result-card">
+        <h1>{{ home_team }} vs {{ away_team }}</h1>
+        <div class="date-info">📅 Match Date: {{ match_date }}</div>
+
+        <div class="winner">{{ winner }}</div>
+
+        <div class="score">
+            Final Score:<br>
+            {{ home_team }} {{ home_goals }} - {{ away_goals }} {{ away_team }}
+        </div>
+
+        <div class="prob">
+  ⚽ <b style="color: {% if 'Wins' in winner and home_team in winner %}#ffd32a{% else %}#fff{% endif %}">
+    {{ home_team }}</b> Winning Chance: {{ home_win_prob }}% <br>
+  🤝 Draw Chance: {{ draw_prob }}% <br>
+  🥅 <b style="color: {% if 'Wins' in winner and away_team in winner %}#ffd32a{% else %}#fff{% endif %}">
+    {{ away_team }}</b> Winning Chance: {{ away_win_prob }}%
+</div>
+
+
+        <a href="/">⬅ Back to Prediction</a>
+    </div>
+</body>
+</html>
